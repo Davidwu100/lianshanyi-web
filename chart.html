@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<title>连山易工具 · 排盘</title>
+<link rel="stylesheet" href="assets/css/fonts.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<style>
+  .profile-context { margin:0 14px 6px; padding:7px 10px; border-left:3px solid #c48a1a; border-bottom:1px solid var(--line-soft); color:var(--ink); font-size:var(--fs-small); line-height:1.3; }
+  .profile-context .context-label { color:var(--ink-3); margin-right:6px; }
+  .profile-context .context-name { font-weight:700; }
+  .profile-context .context-relation { margin-left:7px; color:var(--jade); font-size:var(--fs-tiny); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="topbar">
+    <button class="act" id="btnBack" aria-label="返回首页">←</button>
+    <h1>连山易工具 · 排盘</h1>
+    <button class="act" id="btnMode" aria-label="标注模式" title="切换标注模式">☰</button>
+  </div>
+
+  <div class="content">
+    <div class="profile-context" id="profileContext" hidden></div>
+    <div id="mount"></div>
+  </div>
+
+  <nav class="tabbar" id="tabbar" data-nav="chart"></nav>
+</div>
+
+<!-- ============ 依赖顺序：历法库 → 引擎 → UI ============ -->
+<script src="assets/vendor/lunar.js"></script>
+<script src="data/external/hexagram-64.js"></script>
+<script src="data/external/bajing.js"></script>
+<script src="data/external/zhouyi-text.js"></script>
+<script src="data/calendar-markers.js"></script>
+<script src="data/dst-ranges.js"></script>
+<script src="assets/js/engine/dict-core.js"></script>
+<script src="assets/js/engine/core.js"></script>
+<script src="data/city-longitude.js"></script>
+<script src="assets/js/engine/truesolar.js"></script>
+<script src="assets/js/engine/calendar.js"></script>
+<script src="assets/js/engine/formations.js"></script>
+<script src="assets/js/engine/bajing-shiying.js"></script>
+<script src="assets/js/engine/gua-najia.js"></script>
+<script src="assets/js/engine/gua-engine.js"></script>
+<script src="assets/js/engine/sanyuan-jiuyun.js"></script>
+<script src="assets/js/engine/chart-engine.js"></script>
+<script src="assets/js/ui/provenance.js"></script>
+<script src="assets/js/ui/store.js"></script>
+<script src="assets/js/ui/nav.js"></script>
+<script src="assets/js/ui/render-calendar.js"></script>
+<script src="assets/js/ui/render-chart.js"></script>
+<script src="assets/js/ui/row-select.js"></script>
+
+<script>
+(function () {
+  'use strict';
+  var LSY = window.LSY;
+  if (LSY && LSY.nav) {
+    LSY.nav.auto({
+      chart: [
+        { label: '导出数据', act: 'export' },
+        { label: '当前档案', act: 'cur' }
+      ]
+    });
+  }
+  LSY.pv.bindGlobal();
+  LSY.pv.registerAll(LSY.data.core.meta);
+  LSY.pv.setMode(localStorage.getItem('lsy.pvMode') || 'full');
+
+  document.getElementById('btnMode').addEventListener('click', function () {
+    var next = LSY.pv.getMode() === 'full' ? 'compact' : 'full';
+    LSY.pv.setMode(next);
+    localStorage.setItem('lsy.pvMode', next);
+    this.title = next === 'full' ? '当前：完整标注' : '当前：精简标注';
+  });
+  document.getElementById('btnBack').addEventListener('click', function () { location.href = 'index.html'; });
+
+  // ---------------------------------------------------------- 页面守卫
+  var cur = LSY.store.guard({ analysisOnly: false });
+  var mount = document.getElementById('mount');
+  var context = document.getElementById('profileContext');
+
+  function escText(value) { return LSY.pv.esc(String(value == null ? '' : value)); }
+
+  if (!cur || !cur.chartData) {
+    mount.innerHTML = '<div class="empty">还没有命盘档案。<br><br>'
+      + '<a class="btn btn-primary" href="profile.html" style="display:inline-block;padding:8px 16px">去填写基础信息 →</a></div>';
+    bar.innerHTML = '<span class="tag">未选择档案</span>';
+    return;
+  }
+
+  var raw = cur.rawInput || {};
+  var identity = cur.name || raw.name || '未命名档案';
+  context.innerHTML = '<span class="context-label">当前档案</span><span class="context-name">'
+    + escText(identity) + '</span>'
+    + (raw.relationship ? '<span class="context-relation">' + escText(raw.relationship) + '</span>' : '');
+  context.hidden = false;
+
+  // ------------------------------------------------- 用当前引擎重算（不落旧快照）
+  //   ⚠ 2026-09-12 修正：原实现只重算 boundary，却把**建档当时的 chartData 快照**
+  //     拿去渲染 → 引擎修正（⑩ 卦象、真太阳时、八宫装卦、三元九运窗口…）对旧档案无效，
+  //     表现为「⑩ 一直空着」。现改为整体重算并回灌档案（见 store.rebuild 注释）。
+  var out = LSY.store.rebuild(cur) || {
+    status: cur.status,
+    boundary: (LSY.engine.chart.build(cur.rawInput || {}) || {}).boundary,
+    chartData: cur.chartData
+  };
+
+  LSY.renderChart.render(mount, out);
+
+  // ---------------------------------------------------------- 底部导航
+  document.getElementById('tabbar').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-act]');
+    if (!b) return;
+    var act = b.getAttribute('data-act');
+    if (act === 'compare') {
+      if (LSY.store.count() < 2) { alert('当前只有 1 个档案，无法对比。请到「基础信息」再建一个。'); return; }
+      location.href = 'compare.html';
+      return;
+    }
+    if (act === 'prev' || act === 'next') {
+      var r = LSY.store.move(act === 'prev' ? -1 : 1);
+      if (r) location.reload(); else alert('没有更多档案了。');
+      return;
+    }
+    if (act === 'cur') location.reload();
+
+    // 导出：chartData 全量 JSON + 字段状态清单
+    if (act === 'export') {
+      var payload = {
+        exportedAt: new Date().toISOString(),
+        tool: '连山易网页工具',
+        profile: { name: cur.name, rawInput: cur.rawInput },
+        boundaryStatus: out.status,
+        fieldCounts: out.chartData.meta.fieldCounts,
+        chartData: out.chartData
+      };
+      var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = '连山易chartData_' + (cur.name || '未命名') + '.json';
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
+      return;
+    }
+  });
+})();
+</script>
+</body>
+</html>

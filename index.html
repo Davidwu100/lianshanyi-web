@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<title>连山易 · 人生导航</title>
+<link rel="stylesheet" href="assets/css/fonts.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+<div class="shell">
+
+  <div class="topbar">
+    <span style="width:30px"></span>
+    <h1>连山易 · 人生导航</h1>
+    <button class="act" id="btnArchives" aria-label="档案" title="档案">☰</button>
+  </div>
+
+  <div class="content">
+    <div class="hero">
+      <div class="brand bazi">连山易 · 人生导航</div>
+      <div class="sub">
+        <span>看懂自己</span>
+        <span>找准方向</span>
+        <span>识别人</span>
+        <span>看时机</span>
+        <span>做选择</span>
+      </div>
+    </div>
+
+    <div class="actions" style="padding-top:4px">
+      <a class="btn btn-primary" href="profile.html">开始人生导航</a>
+    </div>
+
+    <ul class="feature-list">
+      <li><b>① 标准排盘</b>历法整流 → 四柱 → 爻位 → 十二值符 → 元运旬，逐字段标注证据强度</li>
+      <li><b>② 年 / 月 / 日 / 时历法</b>日格与时格直接位于命盘页月历下方</li>
+      <li><b>③ 性格与天赋</b>课程类象 · 倾向 · 现实验证建议（不含心理诊断）</li>
+      <li><b>④ 规则状态总览</b>每条规则的来源文件行号、缺失策略与冲突编号</li>
+    </ul>
+
+    <div class="safety" style="margin-bottom:20px">
+      <b>关于证据标注</b><br>
+      本工具依据《连山易》课程主料与蒸馏知识库实现。知识库中仍被标记为
+      <b>条件性 / 待确认</b> 的字段会照常显示，但带角标并可点开查看来源与缺口。
+      <br><br>
+      本工具属传统文化知识应用与辅助决策工具，<b>不构成</b>医学诊断、法律意见、
+      财富承诺或确定性预测。
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/ui/store.js"></script>
+<script>
+(function () {
+  document.getElementById('btnArchives').addEventListener('click', function () {
+    location.href = 'archives.html';
+  });
+})();
+</script>
+</body>
+</html>

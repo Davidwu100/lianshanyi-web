@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<title>连山易 · 对比回看</title>
+<link rel="stylesheet" href="assets/css/fonts.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<style>
+  .cmp-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 12px 0; }
+  .cmp-pick .fld { margin: 0; }
+  .cmp-pick select { width: 100%; }
+  .cmp-sum { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin: 10px 12px 4px; }
+  .cmp-sum div { border: 1px solid var(--line-soft); border-radius: var(--radius); padding: 7px 4px; text-align: center; background: var(--surface); }
+  .cmp-sum .n { font-size: 18px; font-weight: 700; line-height: 1.2; }
+  .cmp-sum .t { font-size: var(--fs-tiny); color: var(--ink-3); }
+  .cmp-tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-small); table-layout: fixed; }
+  .cmp-tbl th, .cmp-tbl td { border: 1px solid var(--line-soft); padding: 5px 6px; vertical-align: top; word-break: break-word; }
+  .cmp-tbl th { background: var(--surface-3); font-size: var(--fs-tiny); color: var(--ink-2); position: sticky; top: 0; z-index: 2; }
+  .cmp-tbl td.lb { background: var(--surface-2); color: var(--ink-2); width: 30%; }
+  .cmp-tbl td.va, .cmp-tbl td.vb { width: 30%; font-family: "Songti SC","SimSun",serif; font-size: 15px; }
+  .cmp-tbl td.vd { width: 10%; text-align: center; font-size: var(--fs-tiny); }
+  .cmp-tbl tr.same td.va, .cmp-tbl tr.same td.vb { color: var(--ink-3); }
+  .cmp-tbl tr.diff td.va, .cmp-tbl tr.diff td.vb { background: #fffbe6; font-weight: 700; color: var(--ink); }
+  .cmp-tbl tr.pending td { color: var(--ev-pending); }
+  .cmp-tbl tr.blocked td { color: var(--ev-pending); }
+  .cmp-tbl tr.missing td { color: var(--ink-3); }
+  .cmp-grp td { background: var(--surface-3) !important; font-weight: 700; color: var(--ink) !important; font-size: var(--fs-tiny); letter-spacing: .06em; }
+  .cmp-tag { display: inline-block; padding: 0 5px; border-radius: 8px; font-size: 9px; border: 1px solid; }
+  .cmp-tag.same { color: var(--ink-3); border-color: var(--line); }
+  .cmp-tag.diff { color: var(--ev-conditional); border-color: var(--ev-conditional); background: var(--ev-bg-conditional); }
+  .cmp-tag.pending { color: var(--ev-pending); border-color: var(--ev-pending); background: var(--ev-bg-pending); }
+  .cmp-tag.blocked { color: var(--ev-pending); border-color: var(--ev-pending); background: var(--ev-bg-pending); }
+  .cmp-tag.missing { color: var(--ink-3); border-color: var(--line-soft); }
+  .cmp-acts { display: flex; gap: 8px; margin: 10px 12px 0; }
+  .cmp-acts .btn { font-size: var(--fs-small); padding: 7px 10px; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="topbar">
+    <button class="act" id="btnBack" aria-label="返回">←</button>
+    <h1>对比回看</h1>
+    <button class="act" id="btnMode" aria-label="标注模式" title="切换标注模式">☰</button>
+  </div>
+
+  <div class="profile-bar" id="profileBar"></div>
+
+  <div class="content" id="mount"></div>
+
+  <nav class="tabbar" data-nav="compare"></nav>
+</div>
+
+<script src="assets/vendor/lunar.js"></script>
+<script src="data/external/hexagram-64.js"></script>
+<script src="data/external/bajing.js"></script>
+<script src="data/external/zhouyi-text.js"></script>
+<script src="assets/js/engine/dict-core.js"></script>
+<script src="assets/js/engine/dict-talent.js"></script>
+<script src="assets/js/engine/core.js"></script>
+<script src="data/dst-ranges.js"></script>
+<script src="data/city-longitude.js"></script>
+<script src="assets/js/engine/truesolar.js"></script>
+<script src="assets/js/engine/calendar.js"></script>
+<script src="assets/js/engine/formations.js"></script>
+<script src="assets/js/engine/bajing-shiying.js"></script>
+<script src="assets/js/engine/gua-najia.js"></script>
+<script src="assets/js/engine/gua-engine.js"></script>
+<script src="assets/js/engine/chart-engine.js"></script>
+<script src="assets/js/engine/talent-engine.js"></script>
+<script src="assets/js/engine/sanyuan-jiuyun.js"></script>
+<script src="assets/js/engine/compare-engine.js"></script>
+<script src="assets/js/ui/provenance.js"></script>
+<script src="assets/js/ui/store.js"></script>
+<script src="assets/js/ui/nav.js"></script>
+
+<script>
+(function () {
+  'use strict';
+  if (window.LSY && window.LSY.nav) window.LSY.nav.auto();
+  var LSY = window.LSY, P = LSY.pv, esc = P.esc;
+  P.bindGlobal();
+  P.registerAll(LSY.data.core.meta);
+  P.setMode(localStorage.getItem('lsy.pvMode') || 'full');
+
+  document.getElementById('btnMode').addEventListener('click', function () {
+    var next = P.getMode() === 'full' ? 'compact' : 'full';
+    P.setMode(next); localStorage.setItem('lsy.pvMode', next);
+  });
+  document.getElementById('btnBack').addEventListener('click', function () { location.href = 'chart.html'; });
+
+  var mount = document.getElementById('mount');
+  var bar = document.getElementById('profileBar');
+  var list = LSY.store.list();
+
+  if (list.length < 2) {
+    bar.innerHTML = '<span class="tag">档案数 ' + list.length + '</span>';
+    mount.innerHTML = '<div class="empty">对比回看需要<b>至少 2 个档案</b>。<br><br>'
+      + '当前有 ' + list.length + ' 个。<br><br>'
+      + '<a class="btn btn-primary" href="profile.html" style="display:inline-block;padding:8px 16px">再建一个档案 →</a></div>';
+    return;
+  }
+
+  // ------------------------------------------------------------ 选择器
+  var optsHtml = list.map(function (x, i) {
+    var r = x.rawInput || {}, b = r.birthDate || { year: r.year, month: r.month, day: r.day };
+    var label = (x.name || '未命名') + ' · ' + (b.year || '') + '-' + (b.month || '') + '-' + (b.day || '');
+    return '<option value="' + i + '">' + esc(label) + '</option>';
+  }).join('');
+
+  var curIdx = LSY.store.indexOfCurrent();
+  var aIdx = curIdx >= 0 ? curIdx : 0;
+  var bIdx = (aIdx === 0) ? 1 : 0;
+
+  var picker = document.createElement('div');
+  picker.innerHTML = '<div class="cmp-pick">'
+    + '<div class="field"><label>档案 A</label><select id="selA">' + optsHtml + '</select></div>'
+    + '<div class="field"><label>档案 B</label><select id="selB">' + optsHtml + '</select></div>'
+    + '</div>'
+    + '<div class="cmp-acts">'
+    + '<button class="btn btn-primary" id="btnRun">对比</button>'
+    + '<button class="btn" id="btnSwap">交换 A/B</button>'
+    + '<button class="btn" id="btnCsv">导出 CSV</button>'
+    + '</div>'
+    + '<div id="cmpBody"></div>';
+  mount.appendChild(picker);
+
+  document.getElementById('selA').value = String(aIdx);
+  document.getElementById('selB').value = String(bIdx);
+  document.getElementById('btnSwap').addEventListener('click', function () {
+    var a = document.getElementById('selA').value;
+    document.getElementById('selA').value = document.getElementById('selB').value;
+    document.getElementById('selB').value = a;
+    run();
+  });
+  document.getElementById('btnRun').addEventListener('click', run);
+
+  var lastResult = null;
+  run();
+
+  // ------------------------------------------------------------ 渲染
+  function run() {
+    var ia = Number(document.getElementById('selA').value);
+    var ib = Number(document.getElementById('selB').value);
+    var A = list[ia], B = list[ib];
+
+    if (ia === ib) {
+      document.getElementById('cmpBody').innerHTML =
+        '<div class="empty">A 与 B 是同一个档案，请换一个再对比。</div>';
+      lastResult = null;
+      return;
+    }
+    // 与 chart.html 同口径：对比前用**当前引擎**各自重算
+    //   （否则拿两份不同时期快照对比，差异会混入引擎版本差 → 见 store.rebuild 注释）
+    var RA = LSY.store.rebuild(A), RB = LSY.store.rebuild(B);
+    var cdA = (RA && RA.chartData) || A.chartData;
+    var cdB = (RB && RB.chartData) || B.chartData;
+
+    if (!cdA || !cdB) {
+      document.getElementById('cmpBody').innerHTML =
+        '<div class="empty">其中一份档案缺少命盘数据，请回到基础信息重新生成。</div>';
+      lastResult = null;
+      return;
+    }
+
+    var res = LSY.engine.compare.compare(cdA, cdB, A, B);
+    lastResult = res;
+
+    bar.innerHTML = '<span class="tag">A：' + esc(A.name || '未命名') + '</span>'
+      + '<span class="tag">B：' + esc(B.name || '未命名') + '</span>'
+      + '<span class="tag">共 ' + list.length + ' 个档案</span>';
+
+    var h = '<div class="cmp-sum">'
+      + sumCell('相同', res.counts.same, 'var(--ink-2)')
+      + sumCell('不同', res.counts.diff, 'var(--ev-conditional)')
+      + sumCell('待确认', res.counts.pending, 'var(--ev-pending)')
+      + sumCell('已阻断', res.counts.blocked, 'var(--ev-pending)')
+      + sumCell('缺失', res.counts.missing, 'var(--ink-3)')
+      + '</div>';
+
+    h += '<div class="scroll-x" style="margin:0 12px"><table class="cmp-tbl">';
+    h += '<thead><tr><th>字段</th><th>' + esc(res.nameA) + '</th><th>' + esc(res.nameB) + '</th><th>判定</th></tr></thead><tbody>';
+    var lastGroup = null;
+    res.rows.forEach(function (r) {
+      if (r.group !== lastGroup) {
+        h += '<tr class="cmp-grp"><td colspan="4">' + esc(r.group) + '</td></tr>';
+        lastGroup = r.group;
+      }
+      var tag = { same: '相同', diff: '不同', pending: '待确认', blocked: '已阻断', missing: '缺失' }[r.verdict];
+      h += '<tr class="' + r.verdict + '">'
+        + '<td class="lb">' + esc(r.label) + '</td>'
+        + '<td class="va">' + (r.a === null ? '<span style="color:var(--ink-3)">—</span>' : esc(r.a)) + '</td>'
+        + '<td class="vb">' + (r.b === null ? '<span style="color:var(--ink-3)">—</span>' : esc(r.b)) + '</td>'
+        + '<td class="vd"><span class="cmp-tag ' + r.verdict + '">' + tag + '</span></td>'
+        + '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    h += '<div class="safety" style="margin-bottom:60px">' + esc(res.disclaimer) + '</div>';
+
+    document.getElementById('cmpBody').innerHTML = h;
+  }
+
+  function sumCell(t, n, color) {
+    return '<div><div class="n" style="color:' + color + '">' + n + '</div><div class="t">' + t + '</div></div>';
+  }
+
+  // ------------------------------------------------------------ 导出 CSV
+  document.getElementById('btnCsv').addEventListener('click', function () {
+    if (!lastResult) { alert('请先完成一次对比。'); return; }
+    var rows = [['分组', '字段', lastResult.nameA, lastResult.nameB, '判定']];
+    lastResult.rows.forEach(function (r) {
+      rows.push([r.group, r.label, r.a === null ? '' : r.a, r.b === null ? '' : r.b,
+        { same: '相同', diff: '不同', pending: '待确认', blocked: '已阻断', missing: '缺失' }[r.verdict]]);
+    });
+    var csv = rows.map(function (r) {
+      return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(',');
+    }).join('\r\n');
+    var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '连山易对比_' + lastResult.nameA + '_vs_' + lastResult.nameB + '.csv';
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
+  });
+})();
+</script>
+</body>
+</html>

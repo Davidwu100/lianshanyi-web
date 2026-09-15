@@ -1,0 +1,687 @@
+/* ===========================================================================
+   连山易网页工具 · 基础样式层
+   设计原则（PRD 第二十五条）：东方智慧 + 现代专业工具
+     清晰 > 炫技 / 有用 > 信息量大 / 结果价值 > 页面复杂度
+   禁止：满屏八卦图、神秘玄学风、金光特效、复杂背景、符号堆叠
+   =========================================================================== */
+
+:root {
+  /* ---- 中性色 ---- */
+  --ink:          #1f2328;
+  --ink-2:        #4a5158;
+  --ink-3:        #7a828a;
+  --line:         #c3c9cf;
+  --line-soft:    #e2e6ea;
+  --surface:      #ffffff;
+  --surface-2:    #f7f8f9;
+  --surface-3:    #eef0f2;
+  --page:         #e8eaec;
+
+  /* ---- 阴阳配色（仅表示阴阳，不表示吉凶） ---- */
+  --yang:         #b3261e;   /* 阳干/阳支 —— 暖色 */
+  --yin:          #1a4fa0;   /* 阴干/阴支 —— 冷色 */
+
+  /* ---- 功能色 ---- */
+  --gold:         #8a6a1f;
+  --jade:         #1f6b52;
+  --violet:       #6b2d8b;
+
+  /* ---- 证据强度色（只表示证据，绝不表示吉凶） ---- */
+  --ev-confirmed: #1f6b52;   /* 有主料支持 */
+  --ev-conditional:#a86a12;  /* 条件性 */
+  --ev-pending:   #5a6b7d;   /* 待确认 */
+  --ev-external:  #7a5c8a;   /* 非连山易外部来源 */
+  --ev-bg-conditional: #fdf6e8;
+  --ev-bg-pending:     #eef1f4;
+  --ev-bg-external:    #f3eef7;
+
+  /* ---- 表格密度 ---- */
+  --cell-pad-y:   2px;
+  --cell-pad-x:   2px;
+  --fs-base:      14px;
+  --fs-small:     12px;
+  --fs-tiny:      10px;
+
+  --radius:       4px;
+  --shadow-1:     0 1px 2px rgba(0,0,0,.06);
+  --shadow-2:     0 4px 16px rgba(0,0,0,.12);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--page);
+  color: var(--ink);
+  /* 内容字体：已**内嵌子集**（--font-content 定义见 fonts.css）
+     子集后仅 1193 KB，故可内嵌 —— 保证任何设备观感一致且完全离线。
+     其后接设备专属字体，使内嵌未覆盖的生僻字落到该端最优字形。 */
+  font-family: var(--font-content);
+  font-size: var(--fs-base);
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ── 标题字体：Noto Serif（衬线）
+   注：西文 Noto Serif 不含 CJK，中文需 Noto Serif SC 或系统宋体承接；
+   故按「Noto Serif → Noto Serif SC → 各平台宋体」顺序回退。 */
+.serif,
+h1, h2, h3,
+.block-title,
+.topbar h1 {
+  font-family: var(--font-title);
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+
+/* 大字干支用衬线，贴近参考图观感 */
+.bazi {
+  font-family: var(--font-bazi);
+  font-weight: 700;
+}
+
+/* ============================================================ 移动端容器 */
+.shell {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--surface);
+  box-shadow: 0 0 32px rgba(0,0,0,.10);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================ 顶栏 */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.topbar h1 {
+  flex: 1;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-align: center;
+}
+.topbar .act {
+  border: 0;
+  background: transparent;
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px 6px;
+  color: var(--ink-2);
+  cursor: pointer;
+  border-radius: var(--radius);
+}
+.topbar .act:hover { background: var(--surface-3); }
+
+/* ============================================================ 档案条 */
+.profile-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line-soft);
+  font-size: var(--fs-small);
+  color: var(--ink-2);
+  flex-wrap: wrap;
+}
+.profile-bar .tag {
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 1px 8px;
+}
+
+/* ============================================================ 状态横幅 */
+.status-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 8px 14px 0;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  font-size: var(--fs-small);
+  line-height: 1.5;
+  border-left: 3px solid;
+}
+.status-banner .ico { flex: 0 0 auto; font-weight: 700; }
+.status-banner .bd { flex: 1; }
+.status-banner .bd b { font-weight: 600; }
+.status-banner .bd ul { margin: 4px 0 0; padding-left: 18px; }
+.status-banner .bd li { margin: 2px 0; }
+.status-banner .sup { color: var(--ink-3); }
+.status-ok      { background: #f1f8f4; border-color: var(--ev-confirmed); }
+.status-review  { background: var(--ev-bg-conditional); border-color: var(--ev-conditional); }
+.status-warn    { background: var(--ev-bg-pending); border-color: var(--ev-pending); }
+.status-block   { background: #fdf1f0; border-color: var(--yang); }
+
+/* ============================================================ 动作区 */
+.actions {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+}
+.btn {
+  flex: 1;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+}
+.btn:hover { background: var(--surface-2); }
+.btn-primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.btn-primary:hover { background: #33383d; }
+
+/* ============================================================ 内容区 */
+.content { flex: 1; padding-bottom: 96px; }
+.block { margin: 4px 0 0; }
+.block-title {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 14px 4px;
+  font-size: var(--fs-small);
+  color: var(--ink-3);
+  letter-spacing: .06em;
+}
+.block-title .n {
+  font-weight: 700;
+  color: var(--ink-2);
+}
+.block-title .desc { flex: 1; }
+
+/* ============================================================ 数据表 */
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: var(--fs-base);
+  text-align: center;
+}
+.tbl th, .tbl td {
+  border: 1px solid var(--line);
+  padding: var(--cell-pad-y) var(--cell-pad-x);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+.tbl th {
+  background: var(--surface-3);
+  font-weight: 600;
+  color: var(--ink-2);
+  font-size: var(--fs-small);
+}
+.tbl .lbl {           /* 行首标签列 */
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+.tbl .val { background: var(--surface); }
+.tbl .big { font-size: 22px; }
+
+/* ── ① 基础信息表：字段左对齐（使用者 2026-09-11 要求）
+   其余数据网格（四柱/值符/元运旬）保持居中，不受影响。 */
+.tbl.tbl-left, .tbl.tbl-left th, .tbl.tbl-left td { text-align: left; }
+.tbl.tbl-left .val, .tbl.tbl-left .lbl { text-align: left; }
+/* 三列均分：colgroup 已在标记里显式声明 12/29/29/30，此处仅确保 fixed 布局 */
+.tbl.tbl-left { table-layout: fixed; }
+/* 基础信息表：标签略小、核心值略大，形成稳定的阅读层级。 */
+.tbl.tbl-left td { padding: 3px 8px; line-height: 1.22; }
+.tbl.tbl-left .lbl {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--ink-2);
+}
+.tbl.tbl-left .val { font-size: 14px; }
+.tbl.tbl-left tr:nth-child(-n+2) .val { font-size: 15px; letter-spacing: .01em; }
+.tbl.tbl-left .tiny { font-size: 11px; }
+/* 周日行：文字不换行；**右侧三格左对齐**
+   使用者 2026-09-12：「周日右侧信息要左对齐」——原先右对齐使「星宿：昴日鸡」
+   与「[摩羯] 第5天」贴到格右缘、与上行（公历/农历/节气）的左对齐基线不一致。 */
+.tbl.tbl-left tr.fitright > td { white-space: nowrap; overflow: visible; text-overflow: clip; text-align: left; }
+.tbl .nowrap { white-space: nowrap; }
+
+/* ============================================================ 密集数据表
+   用于 ②四柱爻位 / ③十二值符大运 / ③b按柱派生标注。
+   使用者 2026-09-11 反馈：四柱格过宽、旬/贵/运 被压成「甲…」。
+   → ①收窄四柱（20%→17%）②末三列加宽（6.67%→8%）
+     ③压缩单元格内边距，把省下的空间让给文字
+     ④数值用等宽数字（tabular-nums），列对齐更整齐 */
+.tbl.tbl-dense { table-layout: fixed; }
+.tbl.tbl-dense th, .tbl.tbl-dense td {
+  padding: 4px 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 占位列：仅用于对齐四柱网格，不显示 */
+.tbl-dense .tbl-filler, .tbl .tbl-filler {
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+/* 等宽数字：年份 / 年龄 / 岁月 等数值列 */
+.mono, .tbl .num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+/* 标签列色差压低，减少视觉分割感 */
+.tbl .lbl { background: var(--surface-2); }
+.tbl.tbl-dense .lbl { background: var(--surface-3); color: var(--ink-3); }
+.tbl .mid { font-size: 16px; }
+.tbl .sm  { font-size: var(--fs-small); }
+.tbl .tiny{ font-size: var(--fs-tiny); color: var(--ink-3); }
+.tbl .mono{ font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+
+/* 阴阳 */
+.yang { color: var(--yang); }
+.yin  { color: var(--yin); }
+
+/* 高亮（当前格 / 当前列）—— **只用底色，不加描边**
+   使用者 2026-09-12：「标记的红框太扎眼，取消，保留底色标识」。
+   原 .cur-cell 为 inset 2px 描边（--ev-conditional 橙红），观感过重。
+   现取消描边，改用稍深的米黄底，使「当前」仍清晰可辨。 */
+.cur { background: #fffbe6 !important; }
+.cur-cell { background: #fdf0c8 !important; }
+
+/* 滚动容器（大元/正元/运/旬表横向可能溢出） */
+.scroll-x {
+  /* ⚠ 不再横向滚动：原 .scroll-x .tbl{min-width:460px} 在 456px 内容区必然溢出，
+     产生横向滚动条。使用者 2026-09-11 要求「不要出现横向滑动条」。
+     现改为：表格 100% 宽、单元格不换行，宽度由列宽网格精确控制。 */
+  overflow: visible;
+  margin: 0 14px;
+  border-radius: var(--radius);
+}
+.scroll-x .tbl { min-width: 0; width: 100%; }
+
+/* ============================================================ 天地盘大字阵 */
+.he-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.he-col { border-right: 1px solid var(--line); display: flex; flex-direction: column; }
+.he-col:last-child { border-right: 0; }
+.he-half {
+  position: relative;
+  padding: 4px;
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.he-half + .he-half { border-top: 1px solid var(--line); }
+.he-glyph { font-size: 36px; line-height: 1; }
+.he-corner {
+  position: absolute;
+  font-size: var(--fs-tiny);
+  line-height: 1.15;
+  color: var(--ink-3);
+}
+.he-tl { top: 2px; left: 3px; }
+.he-tr { top: 2px; right: 3px; }
+.he-bl { bottom: 2px; left: 3px; }
+.he-br { bottom: 2px; right: 3px; }
+.he-corner.attack { color: var(--yang); }
+.he-corner.defend { color: var(--yang); }
+.he-corner.combo  { color: var(--yin); }
+.he-corner.season { color: var(--jade); }
+.he-tag {
+  position: absolute;
+  bottom: -1px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  padding: 0 4px;
+  font-size: 9px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* ============================================================ 批注条 */
+.note-box {
+  margin: 0 14px;
+  padding: 5px 11px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  font-size: var(--fs-small);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.note-box b { color: var(--ink); }
+.note-box .add {
+  display: inline-block;
+  margin-left: 4px;
+  color: var(--ev-conditional);
+  cursor: pointer;
+}
+
+/* ============================================================ 卦象面板 */
+/* 版式对拍参考图（使用者 2026-09-12 附图）：
+   「[兑4] 泽山咸 (31) → [兑3] 泽地萃 (45)」单行横幅 → 左右两列六爻 → 左右两段卦辞 */
+.gua-headline {
+  display: flex; align-items: center; gap: 8px;
+  margin: 0 14px 3px;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbfdf6;
+  flex-wrap: wrap;
+}
+.gua-headline .gh { display: inline-flex; align-items: baseline; gap: 4px; }
+.gua-headline .pal { color: var(--jade); font-family: monospace; }
+.gua-headline .nm { font-weight: 700; font-size: var(--fs-base); }
+.gua-headline .no { color: var(--yang); font-family: monospace; }
+.gua-headline .arrow { color: var(--ink-3); font-weight: 700; padding: 0 2px; }
+.gua-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  margin: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.gua-col { background: #fbfdf6; padding: 4px 8px 6px; }
+.gua-col + .gua-col { border-left: 1px solid var(--line); }
+.gua-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-small);
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.gua-head .pal { color: var(--jade); font-family: monospace; }
+.gua-head .nm { font-weight: 700; font-size: var(--fs-base); }
+.gua-head .no { color: var(--yang); font-family: monospace; }
+.gua-lines { display: flex; flex-direction: column; gap: 2px; }
+.gua-line { display: flex; align-items: center; gap: 4px; font-size: var(--fs-small); }
+.gua-line .gz { width: 42px; text-align: left; flex: 0 0 auto; }
+.gua-bar { display: flex; gap: 3px; flex: 1; align-items: center; }
+.gua-bar i { display: block; height: 8px; background: var(--ink); border-radius: 1px; }
+.gua-bar i.solid { width: 46%; }
+.gua-bar i.broken { width: 19%; }
+.gua-bar i.unknown {
+  width: 46%; height: 8px; background: transparent;
+  border: 1px dashed var(--line-soft); border-radius: 1px;
+  color: var(--ink-3); font-style: normal; font-size: 9px; line-height: 7px;
+  text-align: center;
+}
+.gua-bar .trigram { font-size: var(--fs-tiny); color: var(--yang); margin-left: 4px; white-space: nowrap; }
+/* 动爻标记（参考图作「(3)→」） */
+.gua-bar .gua-move {
+  margin-left: 4px; white-space: nowrap;
+  font-size: var(--fs-tiny); font-weight: 700; color: var(--yang);
+  font-family: monospace;
+}
+.gua-line.moving .gz { color: var(--yang); font-weight: 700; }
+.gua-mark { text-align: center; font-size: var(--fs-small); color: var(--yang); }
+/* 两段卦辞：与上面的两列一一对齐 */
+.gua-texts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 3px 14px 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.gua-texts > .gua-text { padding: 4px 10px; margin: 0; }
+.gua-texts > .gua-text + .gua-text { border-left: 1px solid var(--line); }
+.gua-text {
+  font-size: var(--fs-tiny);
+  line-height: 1.45;
+  color: var(--jade);
+}
+
+/* ============================================================ 底部导航 */
+.tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  z-index: 50;
+}
+.tabbar a, .tabbar button {
+  border: 0;
+  border-right: 1px solid var(--line-soft);
+  background: transparent;
+  padding: 8px 2px;
+  font-size: var(--fs-tiny);
+  color: var(--ink-2);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  line-height: 1.3;
+}
+.tabbar > *:last-child { border-right: 0; }
+.tabbar .on { background: #e8f4f8; color: #0b5f74; font-weight: 700; }
+.tabbar .off { color: #b9c0c6; cursor: default; }
+
+/* 周历页：四页纵向排列，避免用户必须理解左右滑动 */
+.pager-stack { display: block; overflow: visible; }
+.pager-stack > .page { width: 100%; margin-bottom: 8px; }
+
+/* ============================================================ 空态 */
+.empty {
+  margin: 24px 14px;
+  padding: 20px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  text-align: center;
+  color: var(--ink-3);
+  font-size: var(--fs-small);
+  line-height: 1.8;
+}
+.empty a { color: var(--yin); }
+
+/* ============================================================ 首页 */
+.hero { padding: 28px 20px 12px; }
+.hero .brand { font-size: 24px; font-weight: 700; letter-spacing: .08em; }
+.hero .sub { margin-top: 10px; color: var(--ink-2); line-height: 2; font-size: 15px; }
+.hero .sub span { display: block; }
+.feature-list { margin: 16px 12px; padding: 0; list-style: none; }
+.feature-list li {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: var(--fs-small);
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.feature-list li b { color: var(--ink); display: block; margin-bottom: 2px; font-size: var(--fs-base); }
+
+/* ============================================================ 表单 */
+.field { margin: 12px 14px 0; }
+.field label { display: block; font-size: var(--fs-small); color: var(--ink-2); margin-bottom: 4px; }
+.field label .req { color: var(--yang); margin-left: 2px; }
+.field label .opt { color: var(--ink-3); margin-left: 4px; font-size: var(--fs-tiny); }
+.field input[type=text],
+.field input[type=date],
+.field input[type=number],
+.field input[type=time],
+.field select,
+.field textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 9px 10px;
+  font-size: var(--fs-base);
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--ink);
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: 2px solid #b7d4e8;
+  border-color: #7aa9c9;
+}
+.field .hint { margin-top: 3px; font-size: var(--fs-tiny); color: var(--ink-3); line-height: 1.5; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 14px 0; }
+.row2 .field { margin: 0; }
+
+/* ============================================================ 规则状态 */
+.rules-tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-small); }
+.rules-tbl th, .rules-tbl td { border: 1px solid var(--line-soft); padding: 6px 8px; text-align: left; vertical-align: top; }
+.rules-tbl th { background: var(--surface-3); position: sticky; top: 0; z-index: 2; }
+.rules-tbl code { font-size: var(--fs-tiny); color: var(--ink-2); word-break: break-all; }
+.pill {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: var(--fs-tiny);
+  border: 1px solid;
+  white-space: nowrap;
+}
+.pill.confirmed   { color: var(--ev-confirmed);   border-color: var(--ev-confirmed);   background: #f1f8f4; }
+.pill.conditional { color: var(--ev-conditional); border-color: var(--ev-conditional); background: var(--ev-bg-conditional); }
+.pill.RULE_PENDING{ color: var(--ev-pending);     border-color: var(--ev-pending);     background: var(--ev-bg-pending); }
+.pill.derived_candidate { color: var(--violet);   border-color: var(--violet);         background: #f6f0fa; }
+.pill.external    { color: var(--ev-external);    border-color: var(--ev-external);    background: var(--ev-bg-external); }
+
+/* ============================================================ 敏感场景安全边界 */
+.safety {
+  margin: 10px 14px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line-soft);
+  border-left: 3px solid var(--ev-pending);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-size: var(--fs-tiny);
+  color: var(--ink-3);
+  line-height: 1.7;
+}
+
+/* ============================================================ 响应式微调 */
+@media (max-width: 360px) {
+  :root { --fs-base: 13px; }
+  .he-glyph { font-size: 32px; }
+  .tbl .big { font-size: 19px; }
+}
+@media print {
+  .topbar, .tabbar, .actions, .status-banner { display: none; }
+  .shell { box-shadow: none; max-width: none; }
+}
+
+/* ============================================================ 视觉润色层 · 2026-09-12
+   保留密集排盘的信息效率，仅提升层次、留白与交互反馈。 */
+:root {
+  --page: #e7e3dc;
+  --radius: 7px;
+  --shadow-1: 0 1px 2px rgba(31,35,40,.06), 0 6px 18px rgba(31,35,40,.035);
+  --shadow-2: 0 12px 32px rgba(31,35,40,.16);
+}
+html, body {
+  background: radial-gradient(circle at 50% -12%, rgba(255,255,255,.9), transparent 34rem), var(--page);
+}
+.shell {
+  box-shadow: 0 0 0 1px rgba(31,35,40,.07), 0 18px 48px rgba(31,35,40,.12);
+}
+.topbar {
+  padding: 10px 12px;
+  background: rgba(255,255,255,.94);
+  border-bottom-color: var(--line-soft);
+  box-shadow: 0 2px 12px rgba(31,35,40,.05);
+}
+.topbar::before { content: ''; width: 3px; height: 18px; border-radius: 3px; background: var(--yang); opacity: .85; }
+.topbar .act:focus-visible, .btn:focus-visible, .tabbar a:focus-visible, .tabbar button:focus-visible { outline: 2px solid #7aa9c9; outline-offset: 2px; }
+.profile-bar { background: #f6f3ed; }
+.profile-bar .tag { background: rgba(255,255,255,.78); border-radius: 999px; }
+.actions { padding-top: 10px; padding-bottom: 10px; }
+.btn { border-radius: 8px; transition: transform .16s ease, box-shadow .16s ease, background .16s ease; }
+.btn:hover { background: var(--surface-2); transform: translateY(-1px); box-shadow: var(--shadow-2); }
+.block {
+  /* 留白与各数据表统一为 14px —— 否则区块边框比表宽 2~4px，视觉上「对不齐」。
+     （润色层原为 10/12px；此处只改宽度，保留其边框/圆角/阴影处理。） */
+  margin: 5px 14px 0;
+  padding: 3px 0 4px;
+  background: rgba(255,255,255,.72);
+  border: 1px solid rgba(195,201,207,.72);
+  border-radius: 10px;
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+.block-title { margin: 0 14px 7px; color: var(--ink-2); }
+.block-title .n { color: var(--yang); letter-spacing: .02em; }
+.tbl th, .tbl td { border-color: rgba(195,201,207,.82); }
+.tbl th { background: #eef2f3; }
+.tbl .lbl { background: #f4f1eb; }
+/* 内容型区块取消重复的外层卡片，让真正承载信息的内框成为唯一边界。 */
+#b5, #b6, #b8, #b9, #b10 {
+  margin-left: 14px;
+  margin-right: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+#b5 .note-box,
+#b6 .he-grid,
+#b8 .scroll-x,
+#b9 .scroll-x,
+#b9 .chart-calendar-inline,
+#b10 .gua-headline,
+#b10 .gua-wrap,
+#b10 .gua-texts {
+  margin-left: 0;
+  margin-right: 0;
+}
+#b6 .he-grid,
+#b10 .gua-wrap,
+#b10 .gua-texts { width: 100%; }
+.he-grid, .gua-wrap, .gua-headline, .gua-texts, .note-box { margin-left: 14px; margin-right: 14px; }
+.tabbar { background: rgba(255,255,255,.96); border-top-color: var(--line-soft); box-shadow: 0 -4px 18px rgba(31,35,40,.08); }
+.hero {
+  padding: 42px 22px 18px;
+  background: linear-gradient(135deg, #f8f6f0 0%, #fff 58%, #edf4f3 100%);
+  border-bottom: 1px solid var(--line-soft);
+}
+.hero .brand { font-size: 25px; color: #27323a; }
+.feature-list li {
+  margin: 8px 0;
+  padding: 12px 13px;
+  border: 1px solid var(--line-soft);
+  border-left: 3px solid #8ca8a0;
+  border-radius: 8px;
+  background: rgba(255,255,255,.74);
+  box-shadow: var(--shadow-1);
+}
+.field input:hover, .field select:hover, .field textarea:hover { border-color: #9eabb3; }

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<title>连山易工具 · 基础信息</title>
+<link rel="stylesheet" href="assets/css/fonts.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<style>
+  .place-selects { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .place-search-wrap { position:relative; margin-bottom:8px; }
+  .place-search-results { position:absolute; z-index:5; left:0; right:0; top:calc(100% + 3px); padding:4px; border:1px solid var(--line); border-radius:10px; background:var(--paper); box-shadow:0 8px 22px rgba(20,20,20,.12); }
+  .place-search-results button { display:block; width:100%; padding:9px 10px; border:0; border-radius:7px; background:transparent; color:var(--ink); text-align:left; cursor:pointer; font:inherit; }
+  .place-search-results button:hover, .place-search-results button:focus-visible { background:var(--jade-pale); outline:none; }
+  #fReferenceCase { flex:1.25; min-width:0; border:1px solid var(--line); border-radius:var(--radius); padding:9px 8px; font:inherit; background:var(--surface); color:var(--ink); }
+  .time-cell { display:grid; gap:4px; }
+  @media (max-width:520px) { .place-selects { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="topbar">
+    <button class="act" id="btnBack" aria-label="返回">←</button>
+    <h1>基础信息</h1>
+    <span style="width:30px"></span>
+  </div>
+
+  <div class="content" style="padding-bottom:24px">
+
+    <div class="status-banner status-warn" id="needBanner" hidden>
+      <span class="ico">!</span>
+      <div class="bd"><b>请先填写基础信息</b>
+        <div class="sup">分析类页面需要先完成排盘，才能生成结果。</div>
+      </div>
+    </div>
+
+    <div class="row2" style="grid-template-columns:1.4fr 1fr">
+      <div class="field">
+        <label>姓名 / 昵称<span class="opt">选填</span></label>
+        <input type="text" id="fName" placeholder="便于区分多个档案" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>关系标签<span class="opt">选填</span></label>
+        <select id="fRelationship" aria-label="关系标签"></select>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>历法<span class="req">*</span></label>
+        <select id="fCalType">
+          <option value="solar">公历</option>
+          <option value="lunar">农历</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>性别<span class="opt">按规则依赖</span></label>
+        <select id="fGender">
+          <option value="">不提供</option>
+          <option value="乾造" selected>男士（乾造）</option>
+          <option value="坤造">女士（坤造）</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>出生时间<span class="req">*</span></label>
+      <div class="row2" style="margin:0;grid-template-columns:1.25fr 1fr 1fr 1.45fr">
+        <input type="number" id="fYear" placeholder="年" min="1901" max="2100" inputmode="numeric">
+        <input type="number" id="fMonth" placeholder="月" min="1" max="12" inputmode="numeric">
+        <input type="number" id="fDay" placeholder="日" min="1" max="31" inputmode="numeric">
+        <div class="time-cell">
+          <input type="time" id="fExactTime" step="60" aria-label="具体出生时间" placeholder="时:分">
+          <select id="fTime" aria-label="快速选择出生时辰">
+            <option value="">快速选择时辰</option>
+          </select>
+        </div>
+      </div>
+      <div class="hint">农历输入时请填农历的年、月、日；闰月请把月份填成负数（例如闰七月填 -7）。</div>
+      <div class="hint">具体时分和快捷时辰二选一即可；填具体时分时，优先按具体时间校正真太阳时。缺失时辰会自动降级为三柱。</div>
+    </div>
+
+    <div class="field">
+      <label>出生地点<span class="opt">选填，用于真太阳时校正</span></label>
+      <div class="place-search-wrap">
+        <input type="search" id="fPlaceSearch" placeholder="直接搜城市、县、国家或省/州" autocomplete="off" aria-label="直接搜索出生地点">
+        <div id="placeSearchResults" class="place-search-results" role="listbox" hidden></div>
+      </div>
+      <div class="place-selects">
+        <select id="fContinent"><option value="">— 大州（可跳过）—</option></select>
+        <select id="fCountry"><option value="">— 国家/地区（可直接选）—</option></select>
+        <select id="fRegion" disabled><option value="">— 省/州（可跳过）—</option></select>
+        <select id="fCity" disabled><option value="">— 城市/县 —</option></select>
+      </div>
+      <input type="text" id="fPlace" placeholder="已选地点；也可手动输入未收录地点" autocomplete="off">
+      <div class="hint" id="hintPlace">缺失时仅标记「真太阳时未校正」，<b>不会阻断</b>排盘。</div>
+    </div>
+
+    <div class="field">
+      <label>当地时区 UTC 偏移<span class="opt">海外出生必填；按输入钟表时间含夏令时</span></label>
+      <input type="number" id="fTimezone" step="0.5" min="-12" max="14" placeholder="如：纽约冬季 -5，夏季 -4">
+      <div class="hint">美国当地 12:00 按当地时区解释，<b>与北京时间没有关系</b>。中国 UTC+8 城市可留空；海外请填当时 UTC 偏移。</div>
+    </div>
+
+    <div class="field">
+      <label>当前最关心的问题<span class="opt">选填，用于场景路由</span></label>
+      <textarea id="fQuestion" rows="2" placeholder="例如：我适合做什么方向？今年该不该扩张？"></textarea>
+      <div class="hint">留空不影响排盘，但场景分析类页面会先追问问题，而不是输出全盘流水账。</div>
+    </div>
+
+    <div class="field">
+      <label>出生旬锚点<span class="opt">已按专家裁决固定为双轨</span></label>
+      <div class="note-box" style="margin:0">
+        <b>双轨分层消纳</b>（太极点分裂的裁决结果）<br>
+        · <b>公处轨 · 年柱旬</b>　→ 全局大运 / 本命定盘星 / 十二值符表 / 空亡 / 孤<br>
+        · <b>私处轨 · 日柱旬</b>　→ 日自空 / 日私域行为<br>
+        <span style="color:var(--ink-3);font-size:var(--fs-tiny)">
+          两轨并行，不再提供「把日柱旬当全局锚点」的选项——该用法会把 1974 甲寅年生人的第一步大运
+          错排为甲午运，导致运势与星曜整体错位。
+        </span>
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top:18px">
+      <select id="fReferenceCase" aria-label="选择参考案例">
+        <option value="1982">1982-12-26 07:00（辰时）</option>
+        <option value="1962">1962-06-28 13:00（未时）</option>
+      </select>
+      <button class="btn" id="btnDemo">载入参考案例</button>
+      <button class="btn btn-primary" id="btnBuild">生成连山易命盘</button>
+    </div>
+
+    <div id="gateBox" style="margin:0 12px 20px"></div>
+
+    <div class="safety">
+      输入资料仅保存在浏览器本次会话中，<b>不上传、不落盘</b>，关闭标签页即清空。
+    </div>
+  </div>
+</div>
+
+<script src="assets/vendor/lunar.js"></script>
+<script src="data/dst-ranges.js"></script>
+<script src="assets/js/engine/dict-core.js"></script>
+<script src="assets/js/engine/core.js"></script>
+<script src="data/city-longitude.js"></script>
+<script src="data/birth-places.js"></script>
+<script src="assets/js/engine/truesolar.js"></script>
+<script src="assets/js/engine/calendar.js"></script>
+<script src="assets/js/engine/chart-engine.js"></script>
+<script src="assets/js/ui/provenance.js"></script>
+<script src="assets/js/ui/store.js"></script>
+
+<script>
+(function () {
+  'use strict';
+  var LSY = window.LSY;
+
+  LSY.pv.bindGlobal();
+  LSY.pv.registerAll(LSY.data.core.meta);
+  LSY.pv.setMode(localStorage.getItem('lsy.pvMode') || 'full');
+
+  if (LSY.store.qs('need')) document.getElementById('needBanner').hidden = false;
+
+  // ---------------------------------------------------------- 时辰选项
+  var ZHI = LSY.data.core.ZHI;
+  var sel = document.getElementById('fTime');
+  ZHI.forEach(function (z, i) {
+    var start = (i * 2 + 23) % 24, nextStart = (i * 2 + 23 + 2) % 24;
+    var end = nextStart === 0 ? 23 : nextStart - 1;
+    var p = function (n) { return n < 10 ? '0' + n : String(n); };
+    var o = document.createElement('option');
+    o.value = String(start);
+    o.textContent = z + '时　' + p(start) + ':00 - ' + p(end) + ':59';
+    sel.appendChild(o);
+  });
+
+  var relSel = document.getElementById('fRelationship');
+  ['本人', '配偶 / 伴侣', '子女', '父母', '兄弟姐妹', '家人', '家族', '亲戚',
+    '亲密好友', '好友', '小学同学', '中学同学', '大学同学', '同学', '同事',
+    '上级 / 领导', '下属', '客户', '合作伙伴', '其他'].forEach(function (label, i) {
+    var o = document.createElement('option');
+    o.value = label; o.textContent = label;
+    if (i === 0) o.selected = true;
+    relSel.appendChild(o);
+  });
+
+  // ---------------------------------------------------------- 出生地点分级选择
+  // 目录是输入辅助数据，不是连山易规则；最终仍把城市名交给原有经度解析器。
+  (function () {
+    var BP = LSY.data.birthPlaces;
+    var continent = document.getElementById('fContinent');
+    var country = document.getElementById('fCountry');
+    var region = document.getElementById('fRegion');
+    var city = document.getElementById('fCity');
+    var place = document.getElementById('fPlace');
+    var search = document.getElementById('fPlaceSearch');
+    var results = document.getElementById('placeSearchResults');
+    var fill = function (el, values, empty) {
+      el.innerHTML = '<option value="">' + empty + '</option>';
+      values.forEach(function (v) {
+        var o = document.createElement('option'); o.value = v; o.textContent = v; el.appendChild(o);
+      });
+      el.disabled = values.length === 0;
+    };
+    var findContinent = function (name) {
+      return BP.continents().filter(function (c) { return BP.countries(c).indexOf(name) >= 0; })[0] || '';
+    };
+    fill(continent, BP.continents(), '— 大州（可跳过）—');
+    fill(country, BP.countries(), '— 国家/地区（可直接选）—');
+    continent.addEventListener('change', function () {
+      fill(country, BP.countries(continent.value), '— 国家/地区（可直接选）—');
+      fill(region, [], '— 省/州（可跳过）—'); fill(city, [], '— 城市/县 —');
+      place.value = '';
+      place.dispatchEvent(new Event('input'));
+    });
+    country.addEventListener('change', function () {
+      var c = continent.value || findContinent(country.value);
+      if (!continent.value) continent.value = c;
+      fill(region, BP.regions(c, country.value), '— 省/州（可跳过）—');
+      fill(city, [], '— 城市/县 —');
+      place.value = '';
+      place.dispatchEvent(new Event('input'));
+    });
+    region.addEventListener('change', function () {
+      var c = continent.value || findContinent(country.value);
+      fill(city, BP.places(c, country.value, region.value), '— 城市/县 —');
+      place.value = ''; place.dispatchEvent(new Event('input'));
+    });
+    city.addEventListener('change', function () {
+      if (city.value) {
+        place.value = city.value;
+        search.value = city.value;
+        place.dispatchEvent(new Event('input'));
+      }
+    });
+    search.addEventListener('input', function () {
+      var q = search.value.trim(); results.innerHTML = '';
+      var found = BP.search(q);
+      if (!q || !found.length) { results.hidden = true; return; }
+      found.forEach(function (r) {
+        var b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'option');
+        b.textContent = (r.kind === 'place' ? r.place : (r.kind === 'region' ? r.region : r.country))
+          + '　·　' + r.country + (r.region ? ' / ' + r.region : '') + (r.kind === 'country' ? ' / 可继续选择省州' : '');
+        b.addEventListener('click', function () {
+          continent.value = r.continent;
+          fill(country, BP.countries(r.continent), '— 国家/地区（可直接选）—'); country.value = r.country;
+          fill(region, BP.regions(r.continent, r.country), '— 省/州（可跳过）—'); region.value = r.region || '';
+          fill(city, [], '— 城市/县 —');
+          if (r.kind === 'place') {
+            fill(city, BP.places(r.continent, r.country, r.region), '— 城市/县 —'); city.value = r.place;
+          }
+          place.value = r.place || ''; search.value = r.place || r.region || r.country; results.hidden = true;
+          place.dispatchEvent(new Event('input'));
+        });
+        results.appendChild(b);
+      });
+      results.hidden = false;
+    });
+    search.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { var first = results.querySelector('button'); if (first && !results.hidden) { e.preventDefault(); first.click(); } }
+    });
+  })();
+
+  document.getElementById('btnBack').addEventListener('click', function () { location.href = 'index.html'; });
+
+  // ---------------------------------------------------------- 参考案例：保留两张八字参考盘（附图 2 / 3）
+  var REFERENCE_CASES = {
+    '1982': { name: '参考案例（1982 乾造）', year: 1982, month: 12, day: 26, hour: '7' },
+    '1962': { name: '参考案例（1962）', year: 1962, month: 6, day: 28, hour: '13' }
+  };
+  document.getElementById('btnDemo').addEventListener('click', function () {
+    var c = REFERENCE_CASES[document.getElementById('fReferenceCase').value] || REFERENCE_CASES['1982'];
+    document.getElementById('fName').value = c.name;
+    document.getElementById('fRelationship').value = '本人';
+    document.getElementById('fCalType').value = 'solar';
+    document.getElementById('fGender').value = '乾造';
+    document.getElementById('fYear').value = c.year;
+    document.getElementById('fMonth').value = c.month;
+    document.getElementById('fDay').value = c.day;
+    document.getElementById('fTime').value = c.hour;
+    document.getElementById('fExactTime').value = '';
+    document.getElementById('fPlace').value = '';
+    document.getElementById('fPlaceSearch').value = '';
+    document.getElementById('fTimezone').value = '';
+    document.getElementById('fQuestion').value = '';
+    document.getElementById('fPlace').dispatchEvent(new Event('input'));
+  });
+
+  // ------------------------------------------------- 出生地 → 经度 实时回显
+  //   真太阳时公式（语料 S3:119）以 120°E 为基准，须先把出生地解析为经度。
+  //   此处即时告诉使用者「识别到了什么」，避免填了城市名却静默不校正。
+  (function () {
+    var el = document.getElementById('fPlace');
+    var hint = document.getElementById('hintPlace');
+    var DEFAULT = '缺失时仅标记「真太阳时未校正」，<b>不会阻断</b>排盘。';
+    function refresh() {
+      var t = el.value.trim();
+      if (!t) { hint.innerHTML = DEFAULT; hint.style.color = ''; return; }
+      var r = LSY.engine.calendar.resolveLongitude({ place: t });
+      if (!r) {
+        hint.innerHTML = '⚠ 未识别「' + t.replace(/</g, '&lt;') + '」——'
+          + '请填城市名（如「杭州」「浙江省杭州市」）或直接填经度（如 <code>120.15</code>、<code>东经120.15</code>）。'
+          + '留空或不识别时<b>不会阻断</b>排盘，仅标「真太阳时未校正」。';
+        hint.style.color = 'var(--gold)';
+        return;
+      }
+      var lonTxt = function (v) {
+        var a = Math.round(Math.abs(v) * 100) / 100;
+        return v >= 0 ? a + '°E' : a + '°W';
+      };
+      if (r.matched === 'explicit') {
+        hint.innerHTML = '✓ 经度 ' + lonTxt(r.longitude) + '　经度时差 '
+          + ((r.longitude - 120) * 4 >= 0 ? '+' : '−')
+          + Math.abs(Math.round((r.longitude - 120) * 4 * 10) / 10) + ' 分钟（另有均时差 ±14~16 分钟）。';
+      } else if (r.cst === false) {
+        hint.innerHTML = '✓ 识别为「' + r.matched + '」(' + lonTxt(r.longitude) + ')，属于当地时区。'
+          + '请填写当地 UTC 偏移；美国当地 12:00 不换算为北京时间。';
+        hint.style.color = 'var(--gold)';
+        return;
+      } else {
+        hint.innerHTML = '✓ 识别为「' + r.matched + '」' + lonTxt(r.longitude) + '　经度时差 '
+          + ((r.longitude - 120) * 4 >= 0 ? '+' : '−')
+          + Math.abs(Math.round((r.longitude - 120) * 4 * 10) / 10) + ' 分钟（另有均时差 ±14~16 分钟）。'
+          + '日柱、时柱将按真太阳时刻判定。';
+      }
+      hint.style.color = '';
+    }
+    el.addEventListener('input', refresh);
+    el.addEventListener('change', refresh);
+    refresh();
+  })();
+
+  // ---------------------------------------------------------- 生成
+  document.getElementById('btnBuild').addEventListener('click', function () {
+    var input = collect();
+    var box = document.getElementById('gateBox');
+
+    // 先跑输入门控，把阻断理由显示出来（不是闷声失败）
+    var gate = LSY.engine.chart.inputGate(input);
+    if (gate.hardBlock) {
+      box.innerHTML = renderGate(gate);
+      return;
+    }
+    var out = LSY.engine.chart.build(input);
+    if (out.status === 'INPUT_BLOCKED') {
+      box.innerHTML = renderGate(gate);
+      return;
+    }
+
+    LSY.store.save({
+      name: input.name || '未命名',
+      rawInput: input,
+      status: out.status,
+      chartData: out.chartData
+    });
+    location.href = 'chart.html';
+  });
+
+  function collect() {
+    var cal = document.getElementById('fCalType').value;
+    var place = document.getElementById('fPlace').value.trim();
+    var num = function (id) { var v = document.getElementById(id).value; return v === '' ? null : Number(v); };
+    var t = document.getElementById('fTime').value;
+    var exact = document.getElementById('fExactTime').value;
+    var exactParts = exact ? exact.split(':').map(Number) : null;
+    var exactKnown = !!(exactParts && exactParts.length === 2
+      && Number.isInteger(exactParts[0]) && Number.isInteger(exactParts[1]));
+    return {
+      name: document.getElementById('fName').value.trim(),
+      relationship: document.getElementById('fRelationship').value || null,
+      calendarType: cal,
+      gender: document.getElementById('fGender').value || null,
+      year: num('fYear'), month: num('fMonth'), day: num('fDay'),
+      hour: exactKnown ? exactParts[0] : (t === '' ? null : Number(t)),
+      minute: exactKnown ? exactParts[1] : 0,
+      timePrecision: exactKnown ? 'minute' : (t === '' ? null : 'shichen'),
+      shichen: t === '' ? null : LSY.engine.calendar.hourZhi(Number(t)),
+      place: place || null,
+      timezoneOffset: num('fTimezone'),
+      question: document.getElementById('fQuestion').value.trim() || null,
+      subjectType: 'self',
+      // 旬锚点已按专家裁决固定为双轨（公处=年柱旬 / 私处=日柱旬），不再由用户选择
+      xunAnchor: 'year',
+      targetYear: new Date().getFullYear()
+    };
+  }
+
+  function renderGate(gate) {
+    var items = gate.blocked.map(function (b) {
+      return '<li><b>' + b.id + '</b>　必须：' + b.must + '　<span class="sup">禁止：' + b.forbid + '</span></li>';
+    }).join('');
+    return '<div class="status-banner status-block"><span class="ico">✕</span><div class="bd">'
+      + '<b>输入不完整，暂不能生成命盘</b><ul>' + items + '</ul>'
+      + '<div class="sup">补齐后再次点击「生成连山易命盘」。</div></div></div>';
+  }
+})();
+</script>
+</body>
+</html>

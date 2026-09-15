@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<title>连山易工具 · 过往记录</title>
+<link rel="stylesheet" href="assets/css/fonts.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<style>
+  .archive-tools { display:grid; grid-template-columns:1fr 140px; gap:6px; padding:8px 14px 2px; }
+  .archive-tools input, .archive-tools select { width:100%; border:1px solid var(--line); border-radius:8px; padding:7px 9px; background:var(--surface); color:var(--ink); font:inherit; }
+  .archive-list { display:grid; gap:6px; padding:8px 14px 18px; }
+  .archive-card { border:1px solid var(--line); border-radius:8px; background:var(--surface); padding:7px 9px; }
+  .archive-card.current { border-color:#c48a1a; box-shadow:inset 3px 0 0 #c48a1a; }
+  .archive-card.rel-self { background:rgba(255, 218, 120, .18); }
+  .archive-card.rel-family { background:rgba(241, 157, 173, .14); }
+  .archive-card.rel-friend { background:rgba(177, 157, 224, .14); }
+  .archive-card.rel-classmate { background:rgba(126, 190, 199, .14); }
+  .archive-card.rel-work { background:rgba(139, 198, 157, .14); }
+  .archive-card.rel-lead { background:rgba(239, 184, 116, .15); }
+  .archive-card.rel-other { background:rgba(168, 178, 187, .10); }
+  .archive-head { display:flex; align-items:baseline; justify-content:flex-start; flex-wrap:wrap; gap:3px 8px; }
+  .archive-name { font-size:var(--fs-base); color:var(--ink); font-weight:700; }
+  .archive-inline-meta { color:var(--ink-2); font-size:var(--fs-small); }
+  .archive-relation { color:var(--jade); font-size:var(--fs-tiny); }
+  .archive-meta { margin-top:3px; color:var(--ink-2); font-size:var(--fs-small); line-height:1.35; }
+  .archive-meta .muted { color:var(--ink-3); }
+  .archive-actions { margin-top:5px; display:flex; gap:6px; }
+  .archive-open, .archive-edit, .archive-delete, .archive-save, .archive-cancel { padding:3px 8px; border:1px solid var(--line); border-radius:6px; background:var(--paper); color:var(--jade); font:inherit; cursor:pointer; }
+  .archive-delete { color:#b33a36; }
+  .archive-edit-row { display:flex; gap:5px; margin-top:5px; }
+  .archive-edit-row input, .archive-edit-row select { min-width:0; flex:1; border:1px solid var(--line); border-radius:6px; padding:4px 6px; background:var(--paper); color:var(--ink); font:inherit; }
+  .archive-save { color:#23734e; }
+  .archive-open:hover, .archive-open:focus-visible { border-color:#7aa9c9; outline:none; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <button class="act" id="btnBack" aria-label="返回首页">←</button>
+    <h1>过往记录</h1>
+    <span style="width:30px"></span>
+  </div>
+  <main class="content">
+    <div class="archive-tools">
+      <input id="archiveSearch" type="search" placeholder="搜索姓名、关系、出生日期" aria-label="搜索历史档案">
+      <select id="archiveSort" aria-label="历史档案排序">
+        <option value="saved">按建档日期</option>
+        <option value="relationship">按关系亲疏</option>
+        <option value="name">按姓名</option>
+      </select>
+    </div>
+    <div class="archive-list" id="archiveList"></div>
+  </main>
+  <nav class="tabbar" id="tabbar" data-nav="archives"></nav>
+</div>
+<script src="assets/js/ui/store.js"></script>
+<script src="assets/js/ui/nav.js"></script>
+<script>
+(function () {
+  'use strict';
+  var LSY = window.LSY;
+  LSY.nav.auto();
+  document.getElementById('btnBack').addEventListener('click', function () { location.href = 'index.html'; });
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c];
+  }); };
+  var pad = function (n) { return Number(n) < 10 ? '0' + Number(n) : String(n); };
+  var records = [];
+  var editingId = null;
+  var relationOrder = ['本人', '配偶 / 伴侣', '子女', '父母', '兄弟姐妹', '家人', '家族', '亲戚', '亲密好友', '好友', '小学同学', '中学同学', '大学同学', '同学', '同事', '上级 / 领导', '下属', '客户', '合作伙伴', '其他'];
+  function relationClass(label) {
+    label = String(label || '');
+    if (label === '本人') return 'rel-self';
+    if (/家人|家族|父母|子女|兄弟|配偶|伴侣|亲戚/.test(label)) return 'rel-family';
+    if (/好友/.test(label)) return 'rel-friend';
+    if (/同学/.test(label)) return 'rel-classmate';
+    if (/同事|客户|合作伙伴/.test(label)) return 'rel-work';
+    if (/领导|上级|下属/.test(label)) return 'rel-lead';
+    return 'rel-other';
+  }
+  function render(records) {
+    if (records) window.records = records;
+    var all = window.records || LSY.store.list();
+    var query = document.getElementById('archiveSearch').value.trim().toLowerCase();
+    var sort = document.getElementById('archiveSort').value;
+    var list = all.filter(function (x) {
+      if (!query) return true;
+      var r = x.rawInput || {}, b = r.birthDate || {};
+      return [x.name, r.relationship, b.year || r.year, b.month || r.month, b.day || r.day].join(' ').toLowerCase().indexOf(query) >= 0;
+    }).slice().sort(function (a, b) {
+      if (sort === 'relationship') return (relationOrder.indexOf((a.rawInput || {}).relationship) + 1 || 999) - (relationOrder.indexOf((b.rawInput || {}).relationship) + 1 || 999);
+      if (sort === 'name') return String(a.name || '').localeCompare(String(b.name || ''), 'zh-CN');
+      return String(b.savedAt).localeCompare(String(a.savedAt));
+    });
+    var current = LSY.store.currentId();
+    var mount = document.getElementById('archiveList');
+    if (!list.length) {
+      mount.innerHTML = '<div class="empty">还没有过往记录。<br><br><a class="btn btn-primary" href="profile.html">新建命盘 →</a></div>';
+      return;
+    }
+    mount.innerHTML = list.map(function (x) {
+      var r = x.rawInput || {}, b = r.birthDate || {};
+      var date = (b.year || r.year || '—') + '年' + (b.month || r.month || '—') + '月' + (b.day || r.day || '—') + '日';
+      var relation = r.relationship || '未标记关系';
+      var editOptions = relationOrder.map(function (label) {
+        return '<option value="' + esc(label) + '"' + (label === relation ? ' selected' : '') + '>' + esc(label) + '</option>';
+      }).join('');
+      var edit = editingId === x.id
+        ? '<div class="archive-edit-row"><input data-edit-name="' + esc(x.id) + '" value="' + esc(x.name || '未命名') + '" aria-label="修改姓名">'
+          + '<select data-edit-relation="' + esc(x.id) + '" aria-label="修改关系标签">' + editOptions + '</select></div>'
+          + '<div class="archive-actions"><button class="archive-save" data-save-id="' + esc(x.id) + '">保存</button><button class="archive-cancel" data-cancel-id="' + esc(x.id) + '">取消</button></div>'
+        : '<div class="archive-actions"><button class="archive-open" data-id="' + esc(x.id) + '">打开命盘</button><button class="archive-edit" data-edit-id="' + esc(x.id) + '">编辑</button>'
+          + '<button class="archive-delete" data-delete-id="' + esc(x.id) + '">删除</button>'
+          + (x.id === current ? ' <span class="archive-relation">当前</span>' : '') + '</div>';
+      return '<article class="archive-card ' + relationClass(relation) + (x.id === current ? ' current' : '') + '">'
+        + '<div class="archive-head"><span class="archive-name">' + esc(x.name || '未命名') + '</span>'
+        + '<span class="archive-inline-meta">' + esc(date) + ' · ' + esc(r.calendarType === 'lunar' ? '农历' : '公历') + ' · 建档于 ' + esc(new Date(x.savedAt).toLocaleDateString()) + '</span>'
+        + '<span class="archive-relation">' + esc(relation) + '</span></div>' + edit + '</article>';
+    }).join('');
+  }
+  document.getElementById('archiveList').addEventListener('click', function (e) {
+    var edit = e.target.closest('button[data-edit-id]');
+    if (edit) { editingId = edit.getAttribute('data-edit-id'); render(); return; }
+    var cancel = e.target.closest('button[data-cancel-id]');
+    if (cancel) { editingId = null; render(); return; }
+    var save = e.target.closest('button[data-save-id]');
+    if (save) {
+      var id = save.getAttribute('data-save-id');
+      var nameEl = document.querySelector('[data-edit-name="' + id + '"]');
+      var relationEl = document.querySelector('[data-edit-relation="' + id + '"]');
+      LSY.store.update(id, { name: nameEl ? nameEl.value : '', relationship: relationEl ? relationEl.value : '' });
+      window.records = LSY.store.list(); editingId = null; render(); return;
+    }
+    var del = e.target.closest('button[data-delete-id]');
+    if (del) {
+      if (confirm('确定删除这条历史档案吗？删除后无法恢复。')) {
+        LSY.store.remove(del.getAttribute('data-delete-id'));
+        window.records = LSY.store.list();
+        render();
+      }
+      return;
+    }
+    var b = e.target.closest('button[data-id]');
+    if (!b) return;
+    var record = LSY.store.list().filter(function (x) { return x.id === b.getAttribute('data-id'); })[0];
+    if (record && LSY.store.setCurrentRecord) LSY.store.setCurrentRecord(record);
+    else LSY.store.setCurrent(b.getAttribute('data-id'));
+    location.href = 'chart.html';
+  });
+  document.getElementById('archiveSearch').addEventListener('input', function () { render(); });
+  document.getElementById('archiveSort').addEventListener('change', function () { render(); });
+  LSY.store.hydrate(render);
+})();
+</script>
+</body>
+</html>

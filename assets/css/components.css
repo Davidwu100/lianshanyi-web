@@ -1,0 +1,429 @@
+﻿/* ===========================================================================
+   连山易网页工具 · 组件样式层
+   包含：证据角标 / 来源浮层 / 周历格 / 时间层面包屑
+   角标颜色只表示证据强度，绝不表示吉凶
+   =========================================================================== */
+
+/* ============================================================ 证据字段（保留点击数据，不显示多余圆点） */
+:root[data-provenance="compact"] .pv-dot,
+:root[data-provenance="compact"] .pv::after,
+.pv-dot, .pv::after { display: none; }
+
+.pv { position: relative; white-space: nowrap; }
+.pv::after {
+  content: none;
+}
+.pv-conditional   { color: var(--ev-conditional); }
+.pv-RULE_PENDING  { color: var(--ev-pending); text-decoration: underline dotted; text-underline-offset: 2px; }
+.pv-derived_candidate { color: var(--violet); text-decoration: underline dotted; text-underline-offset: 2px; }
+.pv-external      { color: var(--ev-external); text-decoration: underline dotted; text-underline-offset: 2px; }
+.pv-tiny { font-size: var(--fs-tiny); }
+
+.pv-dot {
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  margin-left: 2px;
+  vertical-align: super;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.pv-dot-conditional      { background: var(--ev-conditional); }
+.pv-dot-RULE_PENDING     { background: var(--ev-pending); }
+.pv-dot-derived_candidate{ background: var(--violet); }
+.pv-dot-external         { background: var(--ev-external); }
+.pv-dot-confirmed        { display: none; }
+
+/* ============================================================ 来源浮层 */
+.pv-sheet {
+  position: fixed;
+  inset: 0;
+  background: rgba(20,24,28,.42);
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 200;
+}
+.pv-sheet.on { display: flex; }
+.pv-sheet-inner {
+  background: var(--surface);
+  width: 100%;
+  max-width: 480px;
+  max-height: 78vh;
+  overflow-y: auto;
+  border-radius: 12px 12px 0 0;
+  padding: 14px 16px 24px;
+  box-shadow: var(--shadow-2);
+  position: relative;
+  animation: pv-up .16s ease-out;
+}
+@keyframes pv-up { from { transform: translateY(14px); opacity: .6; } to { transform: none; opacity: 1; } }
+.pv-close {
+  position: absolute;
+  top: 8px; right: 10px;
+  border: 0; background: transparent;
+  font-size: 22px; line-height: 1;
+  color: var(--ink-3); cursor: pointer;
+  padding: 2px 6px;
+}
+.pv-hd { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-right: 28px; flex-wrap: wrap; }
+.pv-hd code { font-size: var(--fs-tiny); color: var(--ink-3); word-break: break-all; }
+.pv-dl { margin: 0; font-size: var(--fs-small); }
+.pv-dl dt {
+  margin-top: 9px;
+  color: var(--ink-3);
+  font-size: var(--fs-tiny);
+  letter-spacing: .05em;
+}
+.pv-dl dd { margin: 2px 0 0; color: var(--ink); line-height: 1.65; word-break: break-word; }
+.pv-dl code { font-size: var(--fs-tiny); background: var(--surface-3); padding: 0 3px; border-radius: 3px; word-break: break-all; }
+.pv-src { margin: 0; padding-left: 16px; }
+.pv-src li { margin: 1px 0; }
+.pv-null { color: var(--ev-pending); }
+.pv-warn {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  background: var(--ev-bg-pending);
+  border-left: 3px solid var(--ev-pending);
+  border-radius: var(--radius);
+  font-size: var(--fs-tiny);
+  color: var(--ink-2);
+  line-height: 1.7;
+}
+
+/* ============================================================ 周历格 */
+.cal-grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: var(--fs-small);
+}
+.cal-grid th {
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  padding: 4px 0;
+  font-size: var(--fs-tiny);
+  color: var(--ink-2);
+  font-weight: 600;
+}
+.cal-grid td {
+  border: 1px solid var(--line-soft);
+  padding: 3px 1px;
+  text-align: center;
+  vertical-align: middle;
+  height: 46px;
+  line-height: 1.25;
+}
+.cal-grid td .d { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cal-grid td .month-tag { color: #d126a8; font-size: 13px; font-weight: 500; margin-right: 1px; }
+.cal-grid td .lv { font-size: 9px; color: var(--ink-3); }
+.cal-grid td .gz-line { display:flex; align-items:baseline; justify-content:center; gap:2px; white-space:nowrap; }
+.cal-grid td .gz { font-size: var(--fs-small); }
+.cal-grid td .fu { font-size: 9px; }
+.cal-grid td.muted { background: var(--surface-2); }
+.cal-grid td.today { background: #fffbe6; box-shadow: inset 0 0 0 2px var(--ev-conditional); }
+.cal-grid td.term { color: var(--jade); }
+.cal-grid td.term .d { color: var(--jade); }
+
+/* 12 格时辰表 */
+.hour-tbl { margin-top: 8px; }
+.hour-tbl td.lbl { width: 30px; }
+/* 月历下方的日 / 时表：保持纵向顺序，同时压缩上下高度，减少空白。 */
+.calendar-page-day .block-title,
+.calendar-page-hour .block-title { margin-bottom: 3px; }
+.calendar-page-day .cal-grid th { padding-top: 3px; padding-bottom: 3px; }
+.calendar-page-day .cal-grid td { padding-top: 2px; padding-bottom: 2px; }
+.calendar-page-hour .hour-tbl { margin-top: 4px; }
+.calendar-page-hour .hour-tbl td { padding-top: 2px; padding-bottom: 2px; }
+/* 命盘页⑨月历下方的日 / 时表：复用周历表格，进一步压缩区块间距。 */
+.chart-calendar-inline { margin: 2px 14px 0; }
+.inline-calendar-block + .inline-calendar-block { margin-top: 2px; }
+.inline-calendar-title {
+  display: flex; align-items: baseline; gap: 6px;
+  margin: 0 0 3px; color: var(--ink-2); font-size: var(--fs-small);
+}
+.inline-calendar-title .n { color: var(--yang); font-weight: 700; }
+.chart-calendar-inline .hour-tbl { margin-top: 2px; }
+.chart-calendar-inline .hour-tbl td { padding-top: 2px; padding-bottom: 2px; }
+
+/* ============================================================ 表格滚动提示 */
+.scroll-hint {
+  margin: 2px 12px 0;
+  font-size: var(--fs-tiny);
+  color: var(--ink-3);
+  text-align: right;
+}
+
+/* ============================================================ 图例 */
+.legend {
+  margin: 10px 12px 0;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  font-size: var(--fs-tiny);
+  color: var(--ink-3);
+  line-height: 1.9;
+}
+.legend b { color: var(--ink-2); }
+.legend i { font-style: normal; }
+.legend .k { display: inline-flex; align-items: center; gap: 3px; margin-right: 10px; }
+.legend .k b { display: inline-block; width: 6px; height: 6px; border-radius: 50%; }
+
+/* ============================================================ 周历页码指示 */
+.pager-dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin: 8px 12px 6px;
+}
+.pager-dots button {
+  flex: 1;
+  max-width: 72px;
+  border: 1px solid var(--line-soft);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 4px 0;
+  font-size: var(--fs-tiny);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.pager-dots button:hover { border-color: var(--line); background: var(--surface-2); }
+
+/* 周历页内每个小月网格之间留白收紧 */
+.pager > .page { padding-bottom: 4px; }
+
+/* ============================================================ 区块锚点导航 */
+.anchor-nav {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 6px 12px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line-soft);
+  -webkit-overflow-scrolling: touch;
+}
+.anchor-nav a {
+  flex: 0 0 auto;
+  font-size: var(--fs-tiny);
+  color: var(--ink-2);
+  text-decoration: none;
+  border: 1px solid var(--line-soft);
+  background: var(--surface);
+  border-radius: 9px;
+  padding: 2px 8px;
+}
+.anchor-nav a:hover { border-color: var(--line); }
+
+/* ── 日格标记（节日/纪念日/法定假日）──────────────────────── */
+.cal-marks { position: absolute; top: 1px; right: 1px; display: flex; gap: 1px; z-index: 1; }
+.cal-mark {
+  display: inline-block; min-width: 12px; height: 12px; line-height: 12px;
+  padding: 0 2px; border-radius: 3px; color: #fff;
+  font-size: 9px; text-align: center; cursor: help;
+}
+.cal-grid td { position: relative; }
+/* ============================================================ ③b 按柱派生标注
+   条带式布局（使用者 2026-09-11：不必向上对齐四柱信息格）
+   每行 = 左标签 + 右四柱值；两列即可，文字不截断、观感清爽 */
+.pd-strip {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+}
+.pd-row {
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid var(--line-soft);
+  /* 统一行高：消除「参差不齐」（各值格字数不同会撑出不同高度） */
+  min-height: 32px;
+}
+.pd-row:first-child { border-top: 0; }
+.pd-label {
+  /* 标签列定宽 + 居中：使 5 行标签竖排对齐、与右侧值间距一致
+     （原 4.8em + 左对齐，使「长旺墓」等 3 字标签贴边、行间错位） */
+  flex: 0 0 5.6em;
+  display: flex; align-items: center; justify-content: center;
+  padding: 5px 6px;
+  background: var(--surface-3);
+  color: var(--ink-3);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  white-space: nowrap;
+  text-align: center;
+  letter-spacing: .02em;
+}
+.pd-vals {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  min-width: 0;
+}
+.pd-cell {
+  display: flex; align-items: center; justify-content: center;
+  gap: 4px;
+  padding: 4px 3px;
+  border-left: 1px solid var(--line-soft);
+  font-size: var(--fs-small);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.pd-cell:first-child { border-left: 0; }
+.pd-match { color: #b2185b; font-weight: 700; }
+.pd-unmatched { color: var(--ink); }
+/* ── ② 的「旬 / 贵 / 运」三列：竖行显示（标签在上、值在下）
+   使用者 2026-09-11 要求：竖行呈现，使三列各占自身列宽、
+   不再以 rowspan 撑高天干/地支行。 */
+.tbl-dense .jx-cell {
+  display: table-cell;
+  vertical-align: middle;
+  text-align: center;
+  padding: 3px 1px;
+  line-height: 1.15;
+}
+.tbl-dense .jx-cell .jx-k {
+  display: block;
+  font-size: var(--fs-tiny);
+  color: var(--ink-3);
+  letter-spacing: .08em;
+}
+.tbl-dense .jx-cell .jx-v {
+  display: block;
+  font-size: var(--fs-small);
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* ── ② 的纵向排布格：孤/空/旬/贵/运 每格一字，天干在上、地支在下
+   （使用者 2026-09-11：要有纵向字体显示，且不得在格内重复列标签） */
+.tbl-dense .stack {
+  text-align: center;
+  vertical-align: middle;
+  line-height: 1.15;
+  padding: 2px 1px;
+}
+/* 密集表格统一行高：避免「参差不齐」与多余空白行 */
+.tbl-dense th, .tbl-dense td { height: 30px; }
+.tbl-dense td.big { height: 34px; }
+/* ── 数字列：等宽数字，使「-18 ~ -09」与「02 ~ 11」位数不同的串也能纵向对齐
+   （符号宽度差异无法靠补零消除，用 tabular-nums 让数字部分对齐） */
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+/* ============================================================ 视觉润色层 · 2026-09-12 */
+.anchor-nav {
+  padding: 8px 12px;
+  background: #f6f3ed;
+}
+.anchor-nav a {
+  padding: 4px 9px;
+  border-radius: 999px;
+  transition: color .16s ease, border-color .16s ease, background .16s ease;
+}
+.anchor-nav a:hover { color: var(--yin); border-color: #a9c0ce; background: #edf4f7; }
+.status-banner, .legend, .safety { box-shadow: var(--shadow-1); }
+.status-banner { border-radius: 8px; }
+.scroll-x { border-radius: 8px; }
+.tbl-dense th { color: #52626b; letter-spacing: .02em; }
+.tbl-dense tr:first-child th { background: #e8eff0; }
+.tbl tr:hover td { background-color: #fafbf8; }
+.tbl tr:hover td.cur { background-color: #fffbe6; }
+.gua-wrap { box-shadow: var(--shadow-1); }
+.gua-col { background: linear-gradient(180deg, #fbfdf6 0%, #f5f9ef 100%); }
+.cal-grid { box-shadow: var(--shadow-1); }
+.cal-grid td { transition: background .12s ease; }
+.cal-grid td:hover { background: #f2f7f6; }
+.cal-grid td.today:hover { background: #fffbe6; }
+.pager-dots button { transition: transform .16s ease, background .16s ease; }
+.pager-dots button:hover { transform: translateY(-1px); }
+.pv-sheet-inner { border-top: 3px solid var(--yin); }
+.pv-close:focus-visible { outline: 2px solid #7aa9c9; outline-offset: 2px; border-radius: 4px; }
+
+/* ── ③ 十二值符大运：当旬行高亮 + 点击行选择
+   默认高亮「测算年所在旬」那一行（米黄底）；
+   点击其它行则动态切换（见 assets/js/ui/row-select.js）。 */
+#zhifu-table tr.row-current > td {
+  background: #fdf6e3;              /* 米黄 */
+}
+#zhifu-table tr.row-current > td:first-child {
+  background: #faedcd;              /* 行首旬名稍深，仍属米黄系 */
+  color: var(--ink);
+}
+#zhifu-table tbody > tr[role="button"] { cursor: pointer; }
+#zhifu-table tbody > tr[role="button"]:hover > td {
+  background: #f7f3ea;
+}
+#zhifu-table tr[data-selected] > td {
+  background: #fbf0d4;
+  box-shadow: inset 0 0 0 1px #e6cf95;
+}
+#zhifu-table tr[data-selected] > td:first-child { background: #f6e6bd; }
+#zhifu-table td.fu-red .pv { color: #c0392b; }
+#zhifu-table td.fu-green .pv { color: #218c5a; }
+#zhifu-table td.fu-black .pv { color: var(--ink); }
+#zhifu-table tbody > tr[role="button"]:focus-visible {
+  outline: 2px solid #7aa9c9;
+  outline-offset: -2px;
+}
+/* ── ③b 列头行：标出列序（时→日→月→年），
+   取代原先每格内重复的时/日/月/年小标（使用者 2026-09-12 要求取消） */
+.pd-headrow { min-height: 22px; background: var(--surface-2); }
+.pd-headrow .pd-label { background: var(--surface-3); font-weight: 600; }
+.pd-head {
+  display: flex; align-items: center; justify-content: center;
+  padding: 3px 3px;
+  border-left: 1px solid var(--line-soft);
+  font-size: var(--fs-tiny);
+  color: var(--ink-3);
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+.pd-head:first-child { border-left: 0; }
+/* ── ③ 表头副标（流年动符 下的 时/日/月/年） */
+.tbl .th-sub { font-weight: 400; color: var(--ink-3); font-size: var(--fs-tiny); }
+
+/* ── ② 的「贵」列：当旬底色
+   使用者 2026-09-12：「贵 附图，做米黄底色，因为这是当旬的贵」。
+   贵 = **流年旬（当旬）**的天赐天佐，故与「当旬」同色系标注。 */
+.tbl-dense .gui-cur {
+  background: #fdf6e3 !important;
+}
+/* ── ⑩ 八宫装卦：世应 / 世身 / 六亲
+   依据 B2-连山易壹级资料_高保真知识.md:905-997（八宫卦序 · 安世应 · 安六亲）。
+   ⚠ 此前记「八宫卦序表缺失」→ 该结论有误，使用者 2026-09-12 指路后补齐。 */
+.gua-head .sy {
+  margin-left: auto;
+  font-size: var(--fs-tiny);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.gua-line .yao-tag {
+  display: inline-block;
+  margin-left: 3px;
+  padding: 0 3px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 13px;
+  color: #fff;
+}
+.gua-line .yao-tag.shi { background: var(--yang); }   /* 世=红 */
+.gua-line .yao-tag.ying { background: var(--yin); }   /* 应=蓝 */
+.gua-line.shi-yao .gz { background: #fdf0c8; }
+.gua-line.ying-yao .gz { background: #eef4fb; }
+.gua-line .liuqin {
+  flex: 0 0 auto;
+  width: 2.4em;
+  text-align: center;
+  font-size: var(--fs-tiny);
+  color: var(--jade);
+}
+/* 断爻改用**单条渐变**绘制（借参考原型 src/chart.css:751 的手法）：
+   比两个 <i> 更稳定——不受 gap 与弹性宽度影响，任何宽度下断口都在正中。 */
+.gua-bar i.broken {
+  width: 46% !important;
+  background: linear-gradient(90deg,
+    var(--ink) 0 42%,
+    transparent 42% 58%,
+    var(--ink) 58%);
+}

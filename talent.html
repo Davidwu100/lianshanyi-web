@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<title>连山易 · 性格与天赋</title>
+<link rel="stylesheet" href="assets/css/fonts.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<style>
+  .t-hero { padding: 16px 14px 10px; }
+  .t-hero h2 { margin: 0 0 6px; font-size: 17px; letter-spacing: .03em; }
+  .t-hero .q { color: var(--ink-3); font-size: var(--fs-small); }
+  .t-card {
+    margin: 10px 12px 0;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .t-card > h3 {
+    margin: 0;
+    padding: 8px 11px;
+    font-size: var(--fs-small);
+    font-weight: 600;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line-soft);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .t-card > h3 .n {
+    display: inline-block; width: 18px; height: 18px; line-height: 18px;
+    text-align: center; border-radius: 50%;
+    background: var(--ink); color: #fff; font-size: 11px;
+  }
+  .t-card .bd { padding: 10px 11px; font-size: var(--fs-small); line-height: 1.75; }
+  .t-card .bd p { margin: 0 0 6px; }
+  .t-card .bd p:last-child { margin-bottom: 0; }
+  .t-points { margin: 0; padding-left: 18px; }
+  .t-points li { margin: 3px 0; }
+  .t-kv { display: grid; grid-template-columns: 76px 1fr; gap: 3px 8px; font-size: var(--fs-small); }
+  .t-kv dt { color: var(--ink-3); }
+  .t-kv dd { margin: 0; }
+  .t-chip {
+    display: inline-block; margin: 2px 4px 2px 0; padding: 1px 8px;
+    border-radius: 10px; font-size: var(--fs-tiny);
+    background: var(--surface-3); color: var(--ink-2);
+  }
+  .t-chip.pos { background: #eef7f0; color: var(--ev-confirmed); }
+  .t-chip.neg { background: #fdf1f0; color: var(--yang); }
+  .t-chip.info { background: var(--ev-bg-conditional); color: var(--ev-conditional); }
+  .t-src { font-size: var(--fs-tiny); color: var(--ink-3); margin-top: 6px; }
+  .t-src code { background: var(--surface-3); padding: 0 3px; border-radius: 3px; word-break: break-all; }
+  .t-route {
+    margin: 8px 12px 0; padding: 7px 10px;
+    background: var(--surface-2); border-left: 3px solid var(--yin);
+    border-radius: var(--radius); font-size: var(--fs-tiny); color: var(--ink-2); line-height: 1.7;
+  }
+  .t-actions { margin: 0; padding-left: 18px; }
+  .t-actions li { margin: 6px 0; }
+  .t-actions b { display: block; }
+  .t-run { display: flex; gap: 8px; align-items: center; margin: 0 12px; }
+  .t-run input, .t-run select {
+    flex: 1; border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 8px 10px; font-size: var(--fs-small); font-family: inherit;
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="topbar">
+    <button class="act" id="btnBack" aria-label="返回">←</button>
+    <h1>性格与天赋</h1>
+    <button class="act" id="btnMode" aria-label="标注模式" title="切换标注模式">☰</button>
+  </div>
+
+  <div class="profile-bar" id="profileBar"></div>
+
+  <div class="content" id="mount"></div>
+
+  <nav class="tabbar" data-nav="talent"></nav>
+</div>
+
+<script src="assets/vendor/lunar.js"></script>
+<script src="assets/js/engine/dict-core.js"></script>
+<script src="assets/js/engine/dict-talent.js"></script>
+<script src="assets/js/engine/core.js"></script>
+<script src="data/dst-ranges.js"></script>
+<script src="data/city-longitude.js"></script>
+<script src="assets/js/engine/truesolar.js"></script>
+<script src="assets/js/engine/calendar.js"></script>
+<script src="assets/js/engine/formations.js"></script>
+<script src="assets/js/engine/sanyuan-jiuyun.js"></script>
+<script src="assets/js/engine/chart-engine.js"></script>
+<script src="assets/js/engine/talent-engine.js"></script>
+<script src="assets/js/ui/provenance.js"></script>
+<script src="assets/js/ui/store.js"></script>
+<script src="assets/js/ui/nav.js"></script>
+
+<script>
+(function () {
+  'use strict';
+  if (window.LSY && window.LSY.nav) window.LSY.nav.auto();
+  var LSY = window.LSY;
+  var P = LSY.pv, esc = P.esc;
+  var pad = function (n) { var s = String(n == null ? 0 : n); return s.length < 2 ? '0' + s : s; };
+
+  P.bindGlobal();
+  P.registerAll(LSY.data.core.meta);
+  P.setMode(localStorage.getItem('lsy.pvMode') || 'full');
+
+  document.getElementById('btnMode').addEventListener('click', function () {
+    var next = P.getMode() === 'full' ? 'compact' : 'full';
+    P.setMode(next); localStorage.setItem('lsy.pvMode', next);
+  });
+  document.getElementById('btnBack').addEventListener('click', function () { location.href = 'index.html'; });
+
+  var mount = document.getElementById('mount');
+  var bar = document.getElementById('profileBar');
+
+  // ---------------------------------------------------- 页面守卫
+  var cur = LSY.store.guard({ analysisOnly: true });
+  if (!cur) return;
+
+  // 与 chart.html 同口径：用**当前引擎**重算，不用建档当时的快照
+  //   （否则引擎修正对旧档案无效 —— 见 store.rebuild 注释）
+  var _rb = LSY.store.rebuild(cur);
+  var cd = (_rb && _rb.chartData) || cur.chartData;
+  var savedQ = (cur.rawInput && cur.rawInput.question) || '';
+
+  bar.innerHTML = '<span class="tag">' + (cur.name || '未命名') + '</span>'
+    + '<span class="tag">' + cd.natalBase.pillars.filter(function (p) { return p.pos === 'day'; })[0].gz + ' 日柱</span>'
+    + '<span class="tag">' + (savedQ ? '已填问题' : '未填问题') + '</span>';
+
+  /************************************************************
+   * 固定的输入区（只建一次，避免重渲染时绑两次监听）
+   ************************************************************/
+  var inputBox = document.createElement('div');
+  inputBox.innerHTML = '<div class="t-run">'
+    + '<select id="qType">'
+    + '<option value="personality">我的性格与天赋</option>'
+    + '<option value="career">职业 / 事业 / 创业方向</option>'
+    + '</select>'
+    + '<button class="btn btn-primary" id="btnRun" style="flex:0 0 auto;padding:8px 14px">重新分析</button>'
+    + '</div>'
+    + '<div class="t-route" id="routeBox"></div>';
+  mount.appendChild(inputBox);
+
+  var bodyBox = document.createElement('div');
+  bodyBox.id = 'bodyBox';
+  mount.appendChild(bodyBox);
+
+  document.getElementById('btnRun').addEventListener('click', function () {
+    var v = document.getElementById('qType').value;
+    render(v === 'career' ? '我的职业与事业方向' : '我的性格与天赋');
+  });
+
+  // 预选问题类型
+  document.getElementById('qType').value =
+    (LSY.engine.talent.routeQuestion(savedQ) === 'career') ? 'career' : 'personality';
+
+  render(savedQ || '我的性格与天赋');
+
+  // ---------------------------------------------------- 渲染
+  function render(qtext) {
+    var out = LSY.engine.talent.analyze(cd, { text: qtext });
+    var h = '';
+
+    // 路由说明
+    document.getElementById('routeBox').innerHTML =
+      '重点分析入口：<b>' + esc(out.route.primaryPillar) + '柱</b>　校正柱位：'
+      + esc(out.route.supportingPillar) + '柱<br>' + esc(out.route.note);
+
+    h += '<div class="t-hero"><h2>' + esc(out.scenarioLabel) + '</h2>'
+      + '<div class="q">当前问题：' + esc(qtext) + '</div></div>';
+
+    // 核心判断
+    h += card('1', '核心判断', function () {
+      var s = '<p><b>' + esc(out.core.headline) + '</b> ' + P.marker(out.core.field) + '</p><ul class="t-points">';
+      out.core.points.forEach(function (t) { s += '<li>' + esc(t) + '</li>'; });
+      s += '</ul><p class="t-src">' + esc(out.core.disclaimer) + '</p>';
+      return s;
+    });
+
+    // 形成依据
+    h += card('2', '形成依据', function () {
+      var s = '<dl class="t-kv">';
+      out.evidence.forEach(function (e) {
+        s += '<dt>' + esc(e.label) + '</dt><dd>' + P.badge(e.text, e.field) + '</dd>';
+      });
+      s += '</dl>';
+      return s;
+    });
+
+    // 天赋与落地分层
+    h += card('3', '天赋本质 × 落地行为（分两层）', function () {
+      var s = '';
+      out.tendencies.forEach(function (t) {
+        s += '<p><b>' + esc(t.layer) + '</b>　' + P.badge(t.from, t.field) + '</p>';
+        if (t.profile) {
+          if (t.profile.symbol) s += '<p>原文具象：' + esc(t.profile.symbol) + '</p>';
+          if (t.profile.tendency) {
+            s += '<div>' + t.profile.tendency.map(function (x) { return '<span class="t-chip pos">' + esc(x) + '</span>'; }).join('') + '</div>';
+          }
+          if (t.profile.risk) {
+            s += '<div>' + t.profile.risk.map(function (x) { return '<span class="t-chip neg">' + esc(x) + '</span>'; }).join('') + '</div>';
+          }
+          s += '<p class="t-src">来源 <code>' + esc(t.profile.source) + '</code>　单元 ' + esc(t.profile.unit || '') + '</p>';
+        }
+        if (t.behavior) {
+          s += '<p><b>行为表现</b></p><div>'
+            + t.behavior.positive.map(function (x) { return '<span class="t-chip pos">' + esc(x) + '</span>'; }).join('')
+            + '</div><p style="margin-top:8px"><b>过度时的另一面</b></p><div>'
+            + t.behavior.overdo.map(function (x) { return '<span class="t-chip neg">' + esc(x) + '</span>'; }).join('')
+            + '</div><p class="t-src">主料行为类象：<code>' + esc(t.behavior.source) + '</code>　单元 ' + esc(t.behavior.unit) + '</p>';
+        }
+        if (t.zhiAttr) {
+          s += '<p>方位 ' + esc(t.zhiAttr.dir) + '　五行 ' + esc(t.zhiAttr.wuxing) + '　季节 ' + esc(t.zhiAttr.season) + '</p>';
+        }
+        if (t.tianFu) {
+          s += '<p>' + esc(t.tianFu.note) + ' ' + P.marker(t.tianFuField) + '</p>';
+        }
+        if (t.blocked) {
+          s += '<p style="color:var(--ev-pending)">缺出生时辰 → 本层阻断。' + esc(t.field.exception_policy) + '</p>';
+        }
+        s += '<hr style="border:0;border-top:1px solid var(--line-soft);margin:8px 0">';
+      });
+      return s;
+    });
+
+    // 四季
+    h += card('4', '四季关系', function () {
+      var s = season0(out.season);
+      return s;
+    });
+
+    // 可能优势 / 限制
+    h += card('5', '可能优势 · 可能限制（同一特点正负两面并存）', function () {
+      var s = '<p><b>可能优势</b></p><div>'
+        + out.strengths.map(function (x) { return '<span class="t-chip pos">' + esc(x.text) + '</span>'; }).join('')
+        + '</div><p style="margin-top:8px"><b>可能限制 / 易过度</b></p><div>'
+        + out.risks.map(function (x) { return '<span class="t-chip neg">' + esc(x.text) + '</span>'; }).join('')
+        + '</div><p class="t-src">原文同时包含优势与限制，不能用一句标签盖掉另一面（LSY-TALENT-006）。</p>';
+      return s;
+    });
+
+    // 行动建议
+    h += card('6', '现实验证与行动建议', function () {
+      var s = '<ul class="t-actions">';
+      out.actions.forEach(function (a) {
+        s += '<li><b>' + esc(a.title) + '</b>' + esc(a.text)
+          + '<div class="t-src">依据：' + esc(a.from) + '</div></li>';
+      });
+      s += '</ul>';
+      return s;
+    });
+
+    // 待确认
+    h += card('7', '待补资料 / 待确认（' + out.pending.length + '）', function () {
+      var s = '<ul class="t-points">';
+      out.pending.forEach(function (p) {
+        s += '<li><b>' + esc(p.code) + '</b>　' + esc(p.text)
+          + '<div class="t-src">可补充：' + esc((p.canSupply || []).join('、')) + '　规则 ' + esc(p.ruleId) + '</div></li>';
+      });
+      s += '</ul>';
+      return s;
+    });
+
+    // 安全边界
+    h += '<div class="safety">'
+      + '<b>安全边界</b><br>'
+      + '本页输出为<b>课程类象 · 倾向 · 现实验证建议</b>，不是心理诊断，不构成职业、婚姻、财富、健康或法律结论。<br>'
+      + '不输出百分制、概率、Top-N 排序或加权求和（柱位权重尚未经专家确认）。<br>'
+      + '来源规则：' + esc(out.safety.ruleId) + '　'
+      + (out.safety.sources || []).map(function (s2) { return '<code>' + esc(s2) + '</code>'; }).join(' ')
+      + '</div>';
+
+    document.getElementById('bodyBox').innerHTML = h;
+  }
+
+  function season0(s) {
+    var out = '<dl class="t-kv">';
+    out += '<dt>天干季节</dt><dd>' + P.badge(s.ganSeason || '—', s.field) + '　<span class="t-src">(domain ' + esc(s.domain) + ')</span></dd>';
+    out += '<dt>地支季节</dt><dd>' + esc(s.zhiSeason || '—') + '</dd>';
+    out += '<dt>季关系</dt><dd>' + esc(s.sameSeason ? '同季' : (s.relation || '—'))
+      + (s.relationSemantics ? '　→ ' + esc(s.relationSemantics) : '') + '</dd>';
+    if (s.ganProfile) out += '<dt>天干画像</dt><dd>' + esc(s.ganProfile.label) + '　' + s.ganProfile.keywords.map(function (k) { return '<span class="t-chip info">' + esc(k) + '</span>'; }).join('') + '</dd>';
+    if (s.zhiProfile && s.zhiProfile !== s.ganProfile) out += '<dt>地支画像</dt><dd>' + esc(s.zhiProfile.label) + '　' + s.zhiProfile.keywords.map(function (k) { return '<span class="t-chip info">' + esc(k) + '</span>'; }).join('') + '</dd>';
+    out += '</dl>';
+    out += '<p class="t-src">' + esc(s.conflictNote || '') + '</p>';
+    return out;
+  }
+
+  function card(n, title, bodyFn) {
+    return '<div class="t-card"><h3><span class="n">' + n + '</span>' + esc(title) + '</h3>'
+      + '<div class="bd">' + bodyFn() + '</div></div>';
+  }
+})();
+</script>
+</body>
+</html>

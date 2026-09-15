@@ -1,0 +1,86 @@
+/*!
+ * 连山易网页工具 · 内嵌字体（子集化 woff2）
+ * ===========================================================================
+ * 字体与授权
+ * ---------------------------------------------------------------------------
+ * ① HarmonyOS Sans SC
+ *      Copyright 2021 Huawei Device Co., Ltd. All Rights Reserved.
+ *      Designed by Huawei Device Co., Ltd & Hanyi Fonts
+ *      随 HarmonyOS 系统分发；此处按其公开可用条款内嵌子集。
+ * ② Noto Serif SC（思源宋体）
+ *      SIL Open Font License 1.1 —— 允许自由使用、修改、再分发（含内嵌），
+ *      须保留版权与许可声明。许可全文见 assets/fonts/LICENSE-NotoSerifSC.txt
+ *
+ * 子集化说明
+ * ---------------------------------------------------------------------------
+ * 由 _build/subset-fonts.py 生成（字符集由 _build/collect-charset.js 采集）：
+ *   harmonyos-sans-sc-regular.woff2   8068 KB → 525 KB   4272 字
+ *   harmonyos-sans-sc-bold.woff2      7968 KB → 270 KB   2326 字
+ *   noto-serif-sc-700.woff2          24540 KB → 398 KB   2326 字
+ *   合计                             40576 KB → 1193 KB（2.9%）
+ *
+ * ⚠ 字符覆盖范围（务必知悉）
+ *   · Regular 含 **GB2312 一级常用字（3755 字）**，覆盖现代汉语常用字约 99.5%
+ *     → 用户输入的姓名、备注等常用字可正常显示
+ *   · Bold / Serif 仅含**代码实际用到的 2326 字**（界面文案、卦辞、干支等）
+ *     → 若用户在标题位输入生僻字，会回退到系统字体（见下方回退链）
+ *   · 若需扩充，改 _build/collect-charset.js 后重跑两个构建脚本即可
+ * =========================================================================== */
+
+/* ── 内容字体：HarmonyOS Sans SC ──────────────────────────────────── */
+
+/* Regular：正文 / 数据 / 用户可输入内容（含 GB2312 一级字安全层） */
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  src: url("../fonts/harmonyos-sans-sc-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+/* Bold：界面强调（表头 / 标签 / 数值） */
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  src: url("../fonts/harmonyos-sans-sc-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── 标题字体：Noto Serif SC（静态 wght=700） ─────────────────────── */
+@font-face {
+  font-family: "Noto Serif SC";
+  src: url("../fonts/noto-serif-sc-700.woff2") format("woff2");
+  font-weight: 400 700;      /* 单一静态字重，声明区间以覆盖 400/700 请求 */
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ===========================================================================
+ * 字体栈定义
+ * ---------------------------------------------------------------------------
+ * 排列原则：**内嵌字体优先 → 设备专属字体 → 通用开源字体 → 系统兜底**
+ *   · 内嵌字体保证「任何设备打开观感一致」且完全离线
+ *   · 其后接设备专属字体（华为/苹果/小米各自的系统字体），
+ *     使内嵌字体未覆盖的生僻字能落到该端最优字形
+ *   · 最后以通用无衬线 / 衬线字体兜底，不依赖特定商业系统字体
+ * =========================================================================== */
+
+:root {
+  --font-content: "HarmonyOS Sans SC", "HarmonyOS Sans",
+                  -apple-system, BlinkMacSystemFont, "PingFang SC",
+                  "MiSans", "Source Han Sans SC", "Noto Sans SC",
+                  "Hiragino Sans GB", sans-serif;
+
+  /* 标题：内嵌 Noto Serif SC 优先；中文回退思源宋体 / 系统宋体。
+     注：西文 "Noto Serif" 不含中文，故只作西文字形来源，置于最前 */
+  --font-title: "Noto Serif SC", "Source Han Serif SC",
+                "Songti SC", "STSong", Georgia, serif;
+
+  /* 大字干支 / 卦名：同衬线，但不再要求西文 Noto Serif */
+  --font-bazi: "Noto Serif SC", "Source Han Serif SC",
+               "Songti SC", "STSong", "SimSun", serif;
+
+  /* 等宽（代码 / 规则 ID） */
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas,
+               "Liberation Mono", monospace;
+}

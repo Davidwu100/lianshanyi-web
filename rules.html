@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<title>连山易 · 规则状态</title>
+<link rel="stylesheet" href="assets/css/fonts.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<style>
+  .r-wrap { padding: 0 12px 80px; }
+  .r-sum { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 10px 0 4px; }
+  .r-sum div {
+    border: 1px solid var(--line-soft); border-radius: var(--radius);
+    padding: 8px 6px; text-align: center; background: var(--surface);
+  }
+  .r-sum .n { font-size: 20px; font-weight: 700; line-height: 1.2; }
+  .r-sum .t { font-size: var(--fs-tiny); color: var(--ink-3); }
+  .r-filter { display: flex; gap: 6px; margin: 10px 0 8px; flex-wrap: wrap; }
+  .r-filter button {
+    border: 1px solid var(--line-soft); background: var(--surface);
+    border-radius: 10px; padding: 3px 10px; font-size: var(--fs-tiny);
+    color: var(--ink-2); cursor: pointer;
+  }
+  .r-filter button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .r-item {
+    border: 1px solid var(--line-soft); border-radius: var(--radius);
+    background: var(--surface); margin-bottom: 8px; overflow: hidden;
+  }
+  .r-item > summary {
+    padding: 8px 10px; cursor: pointer; list-style: none;
+    display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+    font-size: var(--fs-small);
+  }
+  .r-item > summary::-webkit-details-marker { display: none; }
+  .r-item > summary::before { content: '▸'; color: var(--ink-3); font-size: 10px; }
+  .r-item[open] > summary::before { content: '▾'; }
+  .r-item > summary code { font-size: var(--fs-tiny); color: var(--ink); font-weight: 600; }
+  .r-item .r-bd { padding: 0 10px 10px 24px; font-size: var(--fs-tiny); line-height: 1.75; color: var(--ink-2); }
+  .r-item .r-bd dt { color: var(--ink-3); margin-top: 6px; }
+  .r-item .r-bd dd { margin: 2px 0 0; }
+  .r-item .r-bd ul { margin: 2px 0 0; padding-left: 16px; }
+  .r-item .r-bd code { background: var(--surface-3); padding: 0 3px; border-radius: 3px; word-break: break-all; }
+  .r-note { margin-top: 4px; color: var(--ink-3); font-style: normal; }
+  .r-empty { text-align: center; color: var(--ink-3); padding: 20px; font-size: var(--fs-small); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="topbar">
+    <button class="act" id="btnBack" aria-label="返回">←</button>
+    <h1>规则状态</h1>
+    <span style="width:30px"></span>
+  </div>
+
+  <div class="content">
+    <div class="r-wrap">
+      <div class="safety" style="margin:10px 0 0">
+        本页是<b>规则注册表的只读视图</b>。每条规则都带状态、来源文件行号、缺失/冲突策略。
+        状态颜色只表示证据强度，<b>不表示吉凶</b>。<br>
+        当前知识库<b>没有任何规则达到 <code>expert_confirmed</code></b>，
+        因此本页不能被当作生产规则清单。
+      </div>
+
+      <div class="r-sum" id="sum"></div>
+      <div class="r-filter" id="filter"></div>
+      <div id="list"></div>
+    </div>
+  </div>
+
+  <nav class="tabbar" data-nav="rules"></nav>
+</div>
+
+<script src="assets/vendor/lunar.js"></script>
+<script src="assets/js/engine/dict-core.js"></script>
+<script src="assets/js/engine/dict-talent.js"></script>
+<script src="assets/js/engine/core.js"></script>
+<script src="data/city-longitude.js"></script>
+<script src="assets/js/engine/truesolar.js"></script>
+<script src="assets/js/engine/calendar.js"></script>
+<script src="assets/js/engine/chart-engine.js"></script>
+<script src="assets/js/engine/talent-engine.js"></script>
+<script src="assets/js/ui/provenance.js"></script>
+<script src="assets/js/ui/store.js"></script>
+<script src="assets/js/ui/nav.js"></script>
+
+<script>
+(function () {
+  'use strict';
+  if (window.LSY && window.LSY.nav) window.LSY.nav.auto();
+  var LSY = window.LSY, P = LSY.pv, esc = P.esc;
+  P.bindGlobal();
+  document.getElementById('btnBack').addEventListener('click', function () { location.href = 'index.html'; });
+
+  var STATUS_ORDER = ['confirmed', 'verified_as_boundary', 'conditional', 'candidate', 'derived_candidate',
+    'external', 'deprecated', 'RULE_PENDING'];
+  var STATUS_LABEL = {
+    confirmed: '主料支持',
+    verified_as_boundary: '边界原则',
+    conditional: '条件性',
+    candidate: '候选',
+    derived_candidate: '界面推导',
+    external: '外部历法',
+    deprecated: '已弃用',
+    RULE_PENDING: '待确认'
+  };
+  var STATUS_DESC = {
+    confirmed: '有课程主料/一手来源支持，算法闭合。',
+    verified_as_boundary: '边界原则已由源文明确支持，可用于阻断/降级输出（不等于算法已闭合）。',
+    conditional: '有来源但存在缺口、版本差异或专家待确认。',
+    candidate: '已发现但未完成源文对读。',
+    derived_candidate: '由参考界面反推 + 二次文档支持，源文未直接表述。',
+    external: '非连山易规则的通用历法/地理数据，仅作标注，不参与任何连山易判定。',
+    deprecated: '曾经使用、现已被替代的口径。数据保留仅供对拍，界面不再采用。',
+    RULE_PENDING: '仅二次文档自述，或算法在语料中未定义。网页不得伪造结果。'
+  };
+  var STATUS_COLOR = {
+    confirmed: 'confirmed',
+    verified_as_boundary: 'confirmed',
+    conditional: 'conditional',
+    candidate: 'conditional',
+    derived_candidate: 'external',
+    external: 'external',
+    deprecated: 'external',
+    RULE_PENDING: 'pending'
+  };
+  var ITYPE_LABEL = { computed: '计算值', traditional_course: '课程类象', case_only: '仅案例' };
+
+  // ---------------------------------------------------- 收集规则
+  var meta = LSY.data.core.meta;
+  var seen = {}, rules = [];
+  Object.keys(meta).forEach(function (k) {
+    var m = meta[k];
+    if (!m || !m.ruleId) return;
+    if (seen[m.ruleId]) return;       // 同一规则只登记一次（元数据是双索引）
+    seen[m.ruleId] = true;
+    rules.push({
+      key: k,
+      ruleId: m.ruleId,
+      status: m.status || 'RULE_PENDING',
+      sources: m.sources || [],
+      note: m.note || '',
+      conflictId: m.conflictId || null
+    });
+  });
+  // 补上 talent 层规则
+  var OG = LSY.data.talent && LSY.data.talent.OUT_GATE;
+  if (OG && OG.ruleId && !seen[OG.ruleId]) {
+    seen[OG.ruleId] = true;
+    rules.push({
+      key: 'OUT_GATE',
+      ruleId: OG.ruleId,
+      status: OG.status || 'RULE_PENDING',
+      sources: OG.sources || [],
+      note: OG.note || '',
+      conflictId: null
+    });
+  }
+
+  rules.sort(function (a, b) {
+    var d = STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status);
+    return d !== 0 ? d : a.ruleId.localeCompare(b.ruleId);
+  });
+
+  // ---------------------------------------------------- 统计
+  var counts = { confirmed: 0, conditional: 0, derived_candidate: 0, RULE_PENDING: 0 };
+  rules.forEach(function (r) { counts[r.status] = (counts[r.status] || 0) + 1; });
+
+  document.getElementById('sum').innerHTML = STATUS_ORDER.map(function (s) {
+    return '<div><div class="n" style="color:var(--ev-' + (STATUS_COLOR[s] || 'pending') + ')">'
+      + (counts[s] || 0) + '</div><div class="t">' + STATUS_LABEL[s] + '</div></div>';
+  }).join('');
+
+  // ---------------------------------------------------- 过滤
+  var filter = 'all';
+  var filterBar = document.getElementById('filter');
+  filterBar.innerHTML = '<button data-f="all" class="on">全部 ' + rules.length + '</button>'
+    + STATUS_ORDER.filter(function (s) { return (counts[s] || 0) > 0; }).map(function (s) {
+      return '<button data-f="' + s + '">' + STATUS_LABEL[s] + ' ' + (counts[s] || 0) + '</button>';
+    }).join('');
+  filterBar.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-f]');
+    if (!b) return;
+    filter = b.getAttribute('data-f');
+    Array.prototype.forEach.call(filterBar.children, function (x) { x.classList.remove('on'); });
+    b.classList.add('on');
+    paint();
+  });
+
+  // ---------------------------------------------------- 渲染
+  function paint() {
+    var list = rules.filter(function (r) { return filter === 'all' || r.status === filter; });
+    if (!list.length) { document.getElementById('list').innerHTML = '<div class="r-empty">该状态下暂无规则。</div>'; return; }
+    document.getElementById('list').innerHTML = list.map(function (r) {
+      var srcs = r.sources.length
+        ? '<ul>' + r.sources.map(function (s) { return '<li><code>' + esc(s) + '</code></li>'; }).join('') + '</ul>'
+        : '<span style="color:var(--ev-pending)">无来源记录</span>';
+      return '<details class="r-item">'
+        + '<summary><span class="pill ' + r.status + '">' + STATUS_LABEL[r.status] + '</span>'
+        + '<code>' + esc(r.ruleId) + '</code>'
+        + (r.conflictId ? '<span class="pill conditional">' + esc(r.conflictId) + '</span>' : '')
+        + '</summary>'
+        + '<div class="r-bd">'
+        + '<dl>'
+        + '<dt>状态说明</dt><dd>' + esc(STATUS_DESC[r.status]) + '</dd>'
+        + '<dt>来源（文件:行号）</dt><dd>' + srcs + '</dd>'
+        + (r.note ? '<dt>缺失 / 冲突策略</dt><dd>' + esc(r.note) + '</dd>'
+          : '<dt>缺失 / 冲突策略</dt><dd style="color:var(--ink-3)">（未登记）</dd>')
+        + (r.conflictId ? '<dt>冲突编号</dt><dd><code>' + esc(r.conflictId) + '</code></dd>' : '')
+        + '</dl></div></details>';
+    }).join('');
+  }
+  paint();
+
+  // ---------------------------------------------------- 字段级清单（可导出）
+  var btn = document.createElement('button');
+  btn.className = 'btn';
+  btn.style.margin = '14px 0 0';
+  btn.textContent = '导出规则与缺口清单（Markdown）';
+  document.querySelector('.r-wrap').appendChild(btn);
+  btn.addEventListener('click', function () {
+    var lines = ['# 连山易规则与缺口清单', '', '导出时间：' + new Date().toISOString(), '',
+      '| 规则 ID | 状态 | 冲突编号 | 来源数 |', '|---|---|---|---|'];
+    rules.forEach(function (r) {
+      lines.push('| `' + r.ruleId + '` | ' + r.status + ' | ' + (r.conflictId || '—') + ' | ' + r.sources.length + ' |');
+    });
+    lines.push('', '## 待确认（RULE_PENDING）详单', '');
+    rules.filter(function (r) { return r.status === 'RULE_PENDING'; }).forEach(function (r) {
+      lines.push('- **' + r.ruleId + '**：' + r.note);
+      r.sources.forEach(function (s) { lines.push('  - ' + s); });
+    });
+    var blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '连山易规则与缺口清单.md';
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
+  });
+})();
+</script>
+</body>
+</html>
